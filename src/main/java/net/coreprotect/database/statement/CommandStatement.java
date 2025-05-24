@@ -1,5 +1,7 @@
 package net.coreprotect.database.statement;
 
+import net.coreprotect.CoreProtect;
+
 import java.sql.PreparedStatement;
 
 public class CommandStatement {
@@ -17,6 +19,7 @@ public class CommandStatement {
             preparedStmt.setInt(5, y);
             preparedStmt.setInt(6, z);
             preparedStmt.setString(7, message);
+            preparedStmt.setInt(8, CoreProtect.getInstance().rowNumbers().nextRowId("command", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % 1000 == 0) {

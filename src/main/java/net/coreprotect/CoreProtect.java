@@ -2,6 +2,7 @@ package net.coreprotect;
 
 import java.io.File;
 
+import net.coreprotect.database.RowNumbers;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import net.coreprotect.config.ConfigHandler;
@@ -17,6 +18,7 @@ public final class CoreProtect extends JavaPlugin {
 
     private static CoreProtect instance;
     private boolean advancedChestsEnabled = false;
+    private RowNumbers rowNumbers = new RowNumbers(this);
 
     /**
      * Get the instance of CoreProtect
@@ -43,6 +45,7 @@ public final class CoreProtect extends JavaPlugin {
         // Set plugin instance and data folder path
         instance = this;
         ConfigHandler.path = this.getDataFolder().getPath() + File.separator;
+        this.rowNumbers.initialize();
 
         advancedChestsEnabled = getServer().getPluginManager().getPlugin("AdvancedChests") != null;
         // Initialize plugin using the initialization service
@@ -57,10 +60,15 @@ public final class CoreProtect extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        this.rowNumbers.save();
         ShutdownService.safeShutdown(this);
     }
 
     public boolean isAdvancedChestsEnabled() {
         return advancedChestsEnabled;
+    }
+
+    public RowNumbers rowNumbers() {
+        return this.rowNumbers;
     }
 }

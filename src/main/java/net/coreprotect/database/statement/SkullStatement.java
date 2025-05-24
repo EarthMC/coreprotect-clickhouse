@@ -4,6 +4,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+import net.coreprotect.CoreProtect;
+import net.coreprotect.database.FakeRowNumberResultSet;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Skull;
 
@@ -18,15 +20,15 @@ public class SkullStatement {
 
     public static ResultSet insert(PreparedStatement preparedStmt, int time, String owner, String skin) {
         try {
+            final int rowid = CoreProtect.getInstance().rowNumbers().nextRowId("skull", preparedStmt.getConnection());
+
             preparedStmt.setInt(1, time);
             preparedStmt.setString(2, owner);
             preparedStmt.setString(3, skin);
-            if (Database.hasReturningKeys()) {
-                return preparedStmt.executeQuery();
-            }
-            else {
-                preparedStmt.executeUpdate();
-            }
+            preparedStmt.setInt(4, rowid);
+            preparedStmt.execute();
+
+            return new FakeRowNumberResultSet(rowid);
         }
         catch (Exception e) {
             e.printStackTrace();

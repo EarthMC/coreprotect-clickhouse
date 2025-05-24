@@ -1,5 +1,6 @@
 package net.coreprotect.database;
 
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -50,23 +51,24 @@ public class Database extends Queue {
 
     static {
         // Initialize SQL queries for different table types
-        SQL_QUERIES.put(SIGN, "INSERT INTO %sprefix%sign (time, user, wid, x, y, z, action, color, color_secondary, data, waxed, face, line_1, line_2, line_3, line_4, line_5, line_6, line_7, line_8) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        SQL_QUERIES.put(BLOCK, "INSERT INTO %sprefix%block (time, user, wid, x, y, z, type, data, meta, blockdata, action, rolled_back) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        SQL_QUERIES.put(SKULL, "INSERT INTO %sprefix%skull (time, owner, skin) VALUES (?, ?, ?)");
-        SQL_QUERIES.put(CONTAINER, "INSERT INTO %sprefix%container (time, user, wid, x, y, z, type, data, amount, metadata, action, rolled_back) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        SQL_QUERIES.put(ITEM, "INSERT INTO %sprefix%item (time, user, wid, x, y, z, type, data, amount, action, rolled_back) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        SQL_QUERIES.put(WORLD, "INSERT INTO %sprefix%world (id, world) VALUES (?, ?)");
-        SQL_QUERIES.put(CHAT, "INSERT INTO %sprefix%chat (time, user, wid, x, y, z, message) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        SQL_QUERIES.put(COMMAND, "INSERT INTO %sprefix%command (time, user, wid, x, y, z, message) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        SQL_QUERIES.put(SESSION, "INSERT INTO %sprefix%session (time, user, wid, x, y, z, action) VALUES (?, ?, ?, ?, ?, ?, ?)");
-        SQL_QUERIES.put(ENTITY, "INSERT INTO %sprefix%entity (time, data) VALUES (?, ?)");
-        SQL_QUERIES.put(MATERIAL, "INSERT INTO %sprefix%material_map (id, material) VALUES (?, ?)");
-        SQL_QUERIES.put(ART, "INSERT INTO %sprefix%art_map (id, art) VALUES (?, ?)");
-        SQL_QUERIES.put(ENTITY_MAP, "INSERT INTO %sprefix%entity_map (id, entity) VALUES (?, ?)");
-        SQL_QUERIES.put(BLOCKDATA, "INSERT INTO %sprefix%blockdata_map (id, data) VALUES (?, ?)");
+        SQL_QUERIES.put(SIGN, "INSERT INTO %sprefix%sign (time, user, wid, x, y, z, action, color, color_secondary, data, waxed, face, line_1, line_2, line_3, line_4, line_5, line_6, line_7, line_8, rowid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        SQL_QUERIES.put(BLOCK, "INSERT INTO %sprefix%block (time, user, wid, x, y, z, type, data, meta, blockdata, action, rolled_back, rowid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        SQL_QUERIES.put(SKULL, "INSERT INTO %sprefix%skull (time, owner, skin, rowid) VALUES (?, ?, ?, ?)");
+        SQL_QUERIES.put(CONTAINER, "INSERT INTO %sprefix%container (time, user, wid, x, y, z, type, data, amount, metadata, action, rolled_back, rowid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        SQL_QUERIES.put(ITEM, "INSERT INTO %sprefix%item (time, user, wid, x, y, z, type, data, amount, action, rolled_back, rowid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        SQL_QUERIES.put(WORLD, "INSERT INTO %sprefix%world (id, world, rowid) VALUES (?, ?, ?)");
+        SQL_QUERIES.put(CHAT, "INSERT INTO %sprefix%chat (time, user, wid, x, y, z, message, rowid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        SQL_QUERIES.put(COMMAND, "INSERT INTO %sprefix%command (time, user, wid, x, y, z, message, rowid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        SQL_QUERIES.put(SESSION, "INSERT INTO %sprefix%session (time, user, wid, x, y, z, action, rowid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        SQL_QUERIES.put(ENTITY, "INSERT INTO %sprefix%entity (time, data, rowid) VALUES (?, ?, ?)");
+        SQL_QUERIES.put(MATERIAL, "INSERT INTO %sprefix%material_map (id, material, rowid) VALUES (?, ?, ?)");
+        SQL_QUERIES.put(ART, "INSERT INTO %sprefix%art_map (id, art, rowid) VALUES (?, ?, ?)");
+        SQL_QUERIES.put(ENTITY_MAP, "INSERT INTO %sprefix%entity_map (id, entity, rowid) VALUES (?, ?, ?)");
+        SQL_QUERIES.put(BLOCKDATA, "INSERT INTO %sprefix%blockdata_map (id, data, rowid) VALUES (?, ?, ?)");
     }
 
     public static void beginTransaction(Statement statement, boolean isMySQL) {
+        if (true) return; // TODO CH
         Consumer.transacting = true;
 
         try {
@@ -83,6 +85,7 @@ public class Database extends Queue {
     }
 
     public static void commitTransaction(Statement statement, boolean isMySQL) throws Exception {
+        if (true) return; // TODO CH
         int count = 0;
 
         while (true) {
@@ -130,7 +133,7 @@ public class Database extends Queue {
     }
 
     public static boolean hasReturningKeys() {
-        return (!Config.getGlobal().MYSQL && ConfigHandler.SERVER_VERSION >= 20);
+        return true;
     }
 
     public static void containerBreakCheck(String user, Material type, Object container, ItemStack[] contents, Location location) {
@@ -224,13 +227,13 @@ public class Database extends Queue {
         try {
             int rolledBack = MaterialUtils.toggleRolledBack(rb, (table == 2 || table == 3 || table == 4)); // co_item, co_container, co_block
             if (table == 1 || table == 3) {
-                statement.executeUpdate("UPDATE " + ConfigHandler.prefix + "container SET rolled_back='" + rolledBack + "' WHERE rowid='" + id + "'");
+                statement.executeUpdate("ALTER TABLE " + ConfigHandler.prefix + "container UPDATE rolled_back='" + rolledBack + "' WHERE rowid='" + id + "'");
             }
             else if (table == 2) {
-                statement.executeUpdate("UPDATE " + ConfigHandler.prefix + "item SET rolled_back='" + rolledBack + "' WHERE rowid='" + id + "'");
+                statement.executeUpdate("ALTER TABLE " + ConfigHandler.prefix + "item UPDATE rolled_back='" + rolledBack + "' WHERE rowid='" + id + "'");
             }
             else {
-                statement.executeUpdate("UPDATE " + ConfigHandler.prefix + "block SET rolled_back='" + rolledBack + "' WHERE rowid='" + id + "'");
+                statement.executeUpdate("ALTER TABLE " + ConfigHandler.prefix + "block UPDATE rolled_back='" + rolledBack + "' WHERE rowid='" + id + "'");
             }
         }
         catch (Exception e) {
@@ -238,34 +241,21 @@ public class Database extends Queue {
         }
     }
 
+    @Deprecated(since = "clickhouse")
     public static PreparedStatement prepareStatement(Connection connection, int type, boolean keys) {
+        if (keys) {
+            throw new UnsupportedOperationException("Returning keys is not supported in clickhouse, FIXME!");
+        }
+
+        return prepareStatement(connection, type);
+    }
+
+    public static PreparedStatement prepareStatement(Connection connection, int type) {
         PreparedStatement preparedStatement = null;
         try {
             String query = SQL_QUERIES.get(type);
             if (query != null) {
                 query = query.replace("%sprefix%", ConfigHandler.prefix);
-                preparedStatement = prepareStatement(connection, query, keys);
-            }
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return preparedStatement;
-    }
-
-    private static PreparedStatement prepareStatement(Connection connection, String query, boolean keys) {
-        PreparedStatement preparedStatement = null;
-        try {
-            if (keys) {
-                if (hasReturningKeys()) {
-                    preparedStatement = connection.prepareStatement(query + " RETURNING rowid");
-                }
-                else {
-                    preparedStatement = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-                }
-            }
-            else {
                 preparedStatement = connection.prepareStatement(query);
             }
         }
@@ -278,15 +268,6 @@ public class Database extends Queue {
 
     private static void initializeTables(String prefix, Statement statement) {
         try {
-            if (!Config.getGlobal().MYSQL) {
-                if (!Config.getGlobal().DISABLE_WAL) {
-                    statement.executeUpdate("PRAGMA journal_mode=WAL;");
-                }
-                else {
-                    statement.executeUpdate("PRAGMA journal_mode=DELETE;");
-                }
-            }
-
             boolean lockInitialized = false;
             String query = "SELECT rowid as id FROM " + prefix + "database_lock WHERE rowid='1' LIMIT 1";
             ResultSet rs = statement.executeQuery(query);
@@ -297,7 +278,7 @@ public class Database extends Queue {
 
             if (!lockInitialized) {
                 int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
-                statement.executeUpdate("INSERT INTO " + prefix + "database_lock (rowid, status, time) VALUES ('1', '0', '" + unixtimestamp + "')");
+                statement.executeUpdate("INSERT INTO " + prefix + "database_lock (status, time, rowid) VALUES ('1', '0', '" + unixtimestamp + "')");
                 Process.lastLockUpdate = 0;
             }
         }
@@ -312,12 +293,7 @@ public class Database extends Queue {
         ConfigHandler.databaseTables.clear();
         ConfigHandler.databaseTables.addAll(DATABASE_TABLES);
 
-        if (mySQL) {
-            createMySQLTables(prefix, forceConnection, purge);
-        }
-        else {
-            createSQLiteTables(prefix, forcePrefix, forceConnection, purge);
-        }
+        createMySQLTables(prefix, forceConnection, purge);
     }
 
     private static void createMySQLTables(String prefix, Connection forceConnection, boolean purge) {
@@ -325,7 +301,7 @@ public class Database extends Queue {
         try (Connection connection = (forceConnection != null ? forceConnection : Database.getConnection(true, true, true, 0))) {
             if (connection != null) {
                 Statement statement = connection.createStatement();
-                createMySQLTableStructures(prefix, statement);
+                createTableStructures(prefix, statement);
                 if (!purge && forceConnection == null) {
                     initializeTables(prefix, statement);
                 }
@@ -337,80 +313,98 @@ public class Database extends Queue {
             e.printStackTrace();
         }
         if (!success && forceConnection == null) {
-            Config.getGlobal().MYSQL = false;
+            throw new IllegalStateException("Failed to create default database structure, see error(s) above for details.");
         }
     }
 
-    private static void createMySQLTableStructures(String prefix, Statement statement) throws SQLException {
-        String index = "";
+    private static void createTableStructures(String prefix, Statement statement) throws SQLException {
+        String orderBy;
 
         // Art map
-        index = ", INDEX(id)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "art_map(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid),id int,art varchar(255)" + index + ") ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY rowid";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "art_map(rowid UInt64, id UInt32, art String) ENGINE = MergeTree " + orderBy);
 
         // Block
-        index = ", INDEX(wid,x,z,time), INDEX(user,time), INDEX(type,time)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "block(rowid bigint NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid), time int, user int, wid int, x int, y int, z int, type int, data int, meta mediumblob, blockdata blob, action tinyint, rolled_back tinyint" + index + ") ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY (wid, x, z, time)";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "block(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, type UInt32, data UInt32, meta String, blockdata String, action UInt8, rolled_back Bool) ENGINE = MergeTree " + orderBy);
 
         // Chat
-        index = ", INDEX(time), INDEX(user,time), INDEX(wid,x,z,time)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "chat(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid),time int, user int, wid int, x int, y int (3), z int, message varchar(16000)" + index + ") ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY (wid, x, z, time)";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "chat(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Float32, z Int32, message String) ENGINE = MergeTree " + orderBy);
 
         // Command
-        index = ", INDEX(time), INDEX(user,time), INDEX(wid,x,z,time)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "command(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid),time int, user int, wid int, x int, y int (3), z int, message varchar(16000)" + index + ") ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY (wid, x, z, time)";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "command(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Float32, z Int32, message String) ENGINE = MergeTree " + orderBy);
 
         // Container
-        index = ", INDEX(wid,x,z,time), INDEX(user,time), INDEX(type,time)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "container(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid), time int, user int, wid int, x int, y int, z int, type int, data int, amount int, metadata blob, action tinyint, rolled_back tinyint" + index + ") ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY (wid, x, z, time)";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "container(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, type UInt32, data UInt32, amount UInt32, metadata String, action UInt8, rolled_back Bool) ENGINE = MergeTree " + orderBy);
 
         // Item
-        index = ", INDEX(wid,x,z,time), INDEX(user,time), INDEX(type,time)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "item(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid), time int, user int, wid int, x int, y int, z int, type int, data blob, amount int, action tinyint, rolled_back tinyint" + index + ") ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY (wid, x, z, time)";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "item(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, type UInt32, data String, amount UInt32, action UInt8, rolled_back Bool) ENGINE = MergeTree " + orderBy);
 
         // Database lock
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "database_lock(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid),status tinyint,time int) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY rowid";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "database_lock(rowid UInt64, status UInt8, time UInt32) ENGINE = ReplacingMergeTree " + orderBy);
 
         // Entity
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "entity(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid), time int, data blob) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY rowid";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "entity(rowid UInt64, time UInt32, data String) ENGINE = MergeTree " + orderBy);
 
         // Entity map
-        index = ", INDEX(id)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "entity_map(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid),id int,entity varchar(255)" + index + ") ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY rowid";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "entity_map(rowid UInt64, id UInt32, entity String) ENGINE = MergeTree " + orderBy);
 
         // Material map
-        index = ", INDEX(id)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "material_map(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid),id int,material varchar(255)" + index + ") ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY rowid";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "material_map(rowid UInt64, id UInt32, material String) ENGINE = MergeTree " + orderBy);
 
         // Blockdata map
-        index = ", INDEX(id)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "blockdata_map(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid),id int,data varchar(255)" + index + ") ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY id";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "blockdata_map(rowid UInt64, id UInt32, data String) ENGINE = MergeTree " + orderBy);
 
         // Session
-        index = ", INDEX(wid,x,z,time), INDEX(action,time), INDEX(user,time), INDEX(time)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "session(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid),time int, user int, wid int, x int, y int (3), z int, action tinyint" + index + ") ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY (wid, x, z, time)";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "session(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Float32, z Int32, action Bool) ENGINE = MergeTree " + orderBy);
 
         // Sign
-        index = ", INDEX(wid,x,z,time), INDEX(user,time), INDEX(time)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "sign(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid),time int, user int, wid int, x int, y int, z int, action tinyint, color int, color_secondary int, data tinyint, waxed tinyint, face tinyint, line_1 varchar(100), line_2 varchar(100), line_3 varchar(100), line_4 varchar(100), line_5 varchar(100), line_6 varchar(100), line_7 varchar(100), line_8 varchar(100)" + index + ") ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY (wid, x, z, time)";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "sign(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, action UInt8, color UInt32, color_secondary UInt32, data UInt8, waxed UInt8, face UInt8, line_1 String, line_2 String, line_3 String, line_4 String, line_5 String, line_6 String, line_7 String, line_8 String) ENGINE = MergeTree " + orderBy);
 
         // Skull
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "skull(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid), time int, owner varchar(255), skin varchar(255)) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY rowid";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "skull(rowid UInt64, time UInt32, owner String, skin String) ENGINE = MergeTree " + orderBy);
 
         // User
-        index = ", INDEX(user), INDEX(uuid)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "user(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid),time int,user varchar(100),uuid varchar(64)" + index + ") ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY rowid";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "user(rowid UInt64, time UInt32, user String, uuid String) ENGINE = MergeTree " + orderBy);
 
         // Username log
-        index = ", INDEX(uuid,user)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "username_log(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid),time int,uuid varchar(64),user varchar(100)" + index + ") ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY rowid";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "username_log(rowid UInt64, time UInt32, uuid String, user String) ENGINE = MergeTree " + orderBy);
 
         // Version
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "version(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid),time int,version varchar(16)) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY rowid";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "version(rowid UInt64, time UInt32, version String) ENGINE = MergeTree " + orderBy);
 
         // World
-        index = ", INDEX(id)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "world(rowid int NOT NULL AUTO_INCREMENT,PRIMARY KEY(rowid),id int,world varchar(255)" + index + ") ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4");
+        orderBy = "ORDER BY rowid";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "world(rowid UInt64, id UInt32, world String) ENGINE = MergeTree " + orderBy);
+    }
+
+    // Generate a unique snowflake via ch
+    public static BigInteger generateSnowflake() throws SQLException {
+        try (Connection connection = getConnection(false, 500);
+            PreparedStatement statement = connection.prepareStatement("SELECT generateSnowflakeID()");
+            ResultSet rs = statement.executeQuery()) {
+
+            if (rs.next()) {
+                return rs.getObject(1, BigInteger.class);
+            } else {
+                throw new SQLException("Unexpected empty result set");
+            }
+        }
     }
 
     private static void createSQLiteTables(String prefix, boolean forcePrefix, Connection forceConnection, boolean purge) {

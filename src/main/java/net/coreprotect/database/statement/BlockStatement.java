@@ -3,8 +3,10 @@ package net.coreprotect.database.statement;
 import java.sql.PreparedStatement;
 import java.util.List;
 
+import net.coreprotect.CoreProtect;
 import net.coreprotect.utility.BlockUtils;
 import net.coreprotect.utility.ItemUtils;
+import net.coreprotect.utility.serialize.Bytes;
 
 public class BlockStatement {
 
@@ -29,10 +31,11 @@ public class BlockStatement {
             preparedStmt.setInt(6, z);
             preparedStmt.setInt(7, type);
             preparedStmt.setInt(8, data);
-            preparedStmt.setObject(9, byteData);
-            preparedStmt.setObject(10, bBlockData);
+            preparedStmt.setString(9, Bytes.toBlobString(byteData));
+            preparedStmt.setString(10, Bytes.toBlobString(bBlockData));
             preparedStmt.setInt(11, action);
             preparedStmt.setInt(12, rolledBack);
+            preparedStmt.setInt(13, CoreProtect.getInstance().rowNumbers().nextRowId("block", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % 1000 == 0) {

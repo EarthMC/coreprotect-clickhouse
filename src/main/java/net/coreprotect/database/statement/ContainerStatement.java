@@ -2,7 +2,9 @@ package net.coreprotect.database.statement;
 
 import java.sql.PreparedStatement;
 
+import net.coreprotect.CoreProtect;
 import net.coreprotect.utility.ItemUtils;
+import net.coreprotect.utility.serialize.Bytes;
 
 public class ContainerStatement {
 
@@ -22,9 +24,10 @@ public class ContainerStatement {
             preparedStmt.setInt(7, type);
             preparedStmt.setInt(8, data);
             preparedStmt.setInt(9, amount);
-            preparedStmt.setObject(10, byteData);
+            preparedStmt.setString(10, Bytes.toBlobString(byteData));
             preparedStmt.setInt(11, action);
             preparedStmt.setInt(12, rolledBack);
+            preparedStmt.setInt(13, CoreProtect.getInstance().rowNumbers().nextRowId("container", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % 1000 == 0) {

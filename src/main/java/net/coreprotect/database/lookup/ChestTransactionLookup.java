@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import net.coreprotect.utility.serialize.Bytes;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -86,7 +87,7 @@ public class ChestTransactionLookup {
                 long resultTime = results.getLong("time");
                 int resultAmount = results.getInt("amount");
                 int resultRolledBack = results.getInt("rolled_back");
-                byte[] resultMetadata = results.getBytes("metadata");
+                byte[] resultMetadata = Bytes.fromBlobString(results.getString("metadata"));
                 String tooltip = ItemUtils.getEnchantments(resultMetadata, resultType, resultAmount);
 
                 if (ConfigHandler.playerIdCacheReversed.get(resultUserId) == null) {

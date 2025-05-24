@@ -277,7 +277,7 @@ public class NetworkHandler extends Language implements Runnable {
                 }
             }
 
-            if (!Config.getGlobal().CHECK_UPDATES) {
+            if (!Config.getGlobal().CHECK_UPDATES || true) { // CH - disable update checks
                 return;
             }
 

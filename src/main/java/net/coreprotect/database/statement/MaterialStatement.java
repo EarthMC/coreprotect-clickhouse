@@ -1,5 +1,7 @@
 package net.coreprotect.database.statement;
 
+import net.coreprotect.CoreProtect;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -14,6 +16,7 @@ public class MaterialStatement {
         try {
             preparedStmt.setInt(1, id);
             preparedStmt.setString(2, name);
+            preparedStmt.setInt(3, CoreProtect.getInstance().rowNumbers().nextRowId("material_map", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % 1000 == 0) {

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import net.coreprotect.utility.serialize.Bytes;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -180,14 +181,14 @@ public class LookupRaw extends Queue {
                     if ((lookup && actionList.size() == 0) || actionList.contains(4) || actionList.contains(5) || actionList.contains(11)) {
                         resultData = results.getInt("data");
                         resultAmount = results.getInt("amount");
-                        resultMeta = results.getBytes("metadata");
+                        resultMeta = Bytes.fromBlobString(results.getString("metadata"));
                         resultTable = results.getInt("tbl");
                         hasTbl = true;
                     }
                     else {
                         resultData = results.getInt("data");
-                        resultMeta = results.getBytes("meta");
-                        resultBlockData = results.getBytes("blockdata");
+                        resultMeta = Bytes.fromBlobString(results.getString("meta"));
+                        resultBlockData = Bytes.fromBlobString(results.getString("blockdata"));
                     }
 
                     boolean valid = true;
@@ -585,7 +586,7 @@ public class LookupRaw extends Queue {
 
             String unionSelect = "SELECT * FROM (";
             if (Config.getGlobal().MYSQL) {
-                if (queryTable.equals("block")) {
+                if (queryTable.equals("block") && false) { // CH - indexes do not exist
                     if (includeBlock.length() > 0 || includeEntity.length() > 0) {
                         index = "USE INDEX(type) IGNORE INDEX(user,wid) ";
                     }

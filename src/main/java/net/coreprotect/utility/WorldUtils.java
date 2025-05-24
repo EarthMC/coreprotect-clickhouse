@@ -89,6 +89,7 @@ public class WorldUtils extends Queue {
         String index = "";
         boolean isMySQL = net.coreprotect.config.Config.getGlobal().MYSQL;
         if (isMySQL) {
+            if (true) return ""; // CH - no indexes
             index = "USE INDEX(wid) ";
         }
         else {

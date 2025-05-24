@@ -7,11 +7,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Locale;
 
-import net.coreprotect.config.Config;
+import net.coreprotect.CoreProtect;
 import net.coreprotect.config.ConfigHandler;
-import net.coreprotect.database.Database;
 
 public class UserStatement {
+    private static final Object INSERT_LOCK = new Object();
 
     private UserStatement() {
         throw new IllegalStateException("Database class");
@@ -20,35 +20,13 @@ public class UserStatement {
     public static int insert(Connection connection, String user) {
         int id = -1;
 
-        try {
+        try (PreparedStatement preparedStmt = connection.prepareStatement("INSERT INTO " + ConfigHandler.prefix + "user (time, user, rowid) VALUES (?, ?, ?)")) {
             int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
-
-            PreparedStatement preparedStmt = null;
-            if (Database.hasReturningKeys()) {
-                preparedStmt = connection.prepareStatement("INSERT INTO " + ConfigHandler.prefix + "user (time, user) VALUES (?, ?) RETURNING rowid");
-            }
-            else {
-                preparedStmt = connection.prepareStatement("INSERT INTO " + ConfigHandler.prefix + "user (time, user) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS);
-            }
+            id = CoreProtect.getInstance().rowNumbers().nextRowId("user", connection);
 
             preparedStmt.setInt(1, unixtimestamp);
             preparedStmt.setString(2, user);
-
-            if (Database.hasReturningKeys()) {
-                ResultSet resultSet = preparedStmt.executeQuery();
-                resultSet.next();
-                id = resultSet.getInt(1);
-                resultSet.close();
-            }
-            else {
-                preparedStmt.executeUpdate();
-                ResultSet keys = preparedStmt.getGeneratedKeys();
-                keys.next();
-                id = keys.getInt(1);
-                keys.close();
-            }
-
-            preparedStmt.close();
+            preparedStmt.setInt(3, id);
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -69,12 +47,7 @@ public class UserStatement {
         int id = -1;
 
         try {
-            String collate = "";
-            if (!Config.getGlobal().MYSQL) {
-                collate = " COLLATE NOCASE";
-            }
-
-            String where = "user = ?" + collate;
+            String where = "user = ?";
             if (uuid != null) {
                 where = where + " OR uuid = ?";
             }

@@ -2,7 +2,9 @@ package net.coreprotect.database.statement;
 
 import java.sql.PreparedStatement;
 
+import net.coreprotect.CoreProtect;
 import net.coreprotect.utility.ItemUtils;
+import net.coreprotect.utility.serialize.Bytes;
 
 public class ItemStatement {
 
@@ -20,10 +22,11 @@ public class ItemStatement {
             preparedStmt.setInt(5, y);
             preparedStmt.setInt(6, z);
             preparedStmt.setInt(7, type);
-            preparedStmt.setObject(8, byteData);
+            preparedStmt.setString(8, Bytes.toBlobString(byteData));
             preparedStmt.setInt(9, amount);
             preparedStmt.setInt(10, action);
             preparedStmt.setInt(11, 0); // rolled_back
+            preparedStmt.setInt(12, CoreProtect.getInstance().rowNumbers().nextRowId("item", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % 1000 == 0) {

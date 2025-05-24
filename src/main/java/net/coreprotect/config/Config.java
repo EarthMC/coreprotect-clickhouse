@@ -94,12 +94,12 @@ public class Config extends Language {
 
     static {
         DEFAULT_VALUES.put("donation-key", "");
-        DEFAULT_VALUES.put("use-mysql", "false");
+        DEFAULT_VALUES.put("use-mysql", "true");
         DEFAULT_VALUES.put("table-prefix", "co_");
         DEFAULT_VALUES.put("mysql-host", "127.0.0.1");
-        DEFAULT_VALUES.put("mysql-port", "3306");
-        DEFAULT_VALUES.put("mysql-database", "database");
-        DEFAULT_VALUES.put("mysql-username", "root");
+        DEFAULT_VALUES.put("mysql-port", "8123");
+        DEFAULT_VALUES.put("mysql-database", "coreprotect");
+        DEFAULT_VALUES.put("mysql-username", "default");
         DEFAULT_VALUES.put("mysql-password", "");
         DEFAULT_VALUES.put("language", "en");
         DEFAULT_VALUES.put("check-updates", "true");

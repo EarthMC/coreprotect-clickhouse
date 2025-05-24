@@ -59,7 +59,7 @@ public class Process {
             int unixTimestamp = (int) (System.currentTimeMillis() / 1000L);
             int timeSinceLastUpdate = unixTimestamp - lastLockUpdate;
             if (timeSinceLastUpdate >= 15 || locked == 0) {
-                statement.executeUpdate("UPDATE " + ConfigHandler.prefix + "database_lock SET status = '" + locked + "', time = '" + unixTimestamp + "' WHERE rowid = '1'");
+                statement.executeUpdate("ALTER TABLE " + ConfigHandler.prefix + "database_lock UPDATE status = '" + locked + "', time = '" + unixTimestamp + "' WHERE rowid = '1'");
                 lastLockUpdate = unixTimestamp;
             }
         }
@@ -108,20 +108,20 @@ public class Process {
             Database.commitTransaction(statement, Config.getGlobal().MYSQL);
 
             // Create prepared statements
-            PreparedStatement preparedStmtSigns = Database.prepareStatement(connection, Database.SIGN, false);
-            PreparedStatement preparedStmtBlocks = Database.prepareStatement(connection, Database.BLOCK, false);
-            PreparedStatement preparedStmtSkulls = Database.prepareStatement(connection, Database.SKULL, true);
-            PreparedStatement preparedStmtContainers = Database.prepareStatement(connection, Database.CONTAINER, false);
-            PreparedStatement preparedStmtItems = Database.prepareStatement(connection, Database.ITEM, false);
-            PreparedStatement preparedStmtWorlds = Database.prepareStatement(connection, Database.WORLD, false);
-            PreparedStatement preparedStmtChat = Database.prepareStatement(connection, Database.CHAT, false);
-            PreparedStatement preparedStmtCommand = Database.prepareStatement(connection, Database.COMMAND, false);
-            PreparedStatement preparedStmtSession = Database.prepareStatement(connection, Database.SESSION, false);
-            PreparedStatement preparedStmtEntities = Database.prepareStatement(connection, Database.ENTITY, true);
-            PreparedStatement preparedStmtMaterials = Database.prepareStatement(connection, Database.MATERIAL, false);
-            PreparedStatement preparedStmtArt = Database.prepareStatement(connection, Database.ART, false);
-            PreparedStatement preparedStmtEntity = Database.prepareStatement(connection, Database.ENTITY_MAP, false);
-            PreparedStatement preparedStmtBlockdata = Database.prepareStatement(connection, Database.BLOCKDATA, false);
+            PreparedStatement preparedStmtSigns = Database.prepareStatement(connection, Database.SIGN);
+            PreparedStatement preparedStmtBlocks = Database.prepareStatement(connection, Database.BLOCK);
+            PreparedStatement preparedStmtSkulls = Database.prepareStatement(connection, Database.SKULL);
+            PreparedStatement preparedStmtContainers = Database.prepareStatement(connection, Database.CONTAINER);
+            PreparedStatement preparedStmtItems = Database.prepareStatement(connection, Database.ITEM);
+            PreparedStatement preparedStmtWorlds = Database.prepareStatement(connection, Database.WORLD);
+            PreparedStatement preparedStmtChat = Database.prepareStatement(connection, Database.CHAT);
+            PreparedStatement preparedStmtCommand = Database.prepareStatement(connection, Database.COMMAND);
+            PreparedStatement preparedStmtSession = Database.prepareStatement(connection, Database.SESSION);
+            PreparedStatement preparedStmtEntities = Database.prepareStatement(connection, Database.ENTITY);
+            PreparedStatement preparedStmtMaterials = Database.prepareStatement(connection, Database.MATERIAL);
+            PreparedStatement preparedStmtArt = Database.prepareStatement(connection, Database.ART);
+            PreparedStatement preparedStmtEntity = Database.prepareStatement(connection, Database.ENTITY_MAP);
+            PreparedStatement preparedStmtBlockdata = Database.prepareStatement(connection, Database.BLOCKDATA);
 
             // Scan through consumer data
             Database.beginTransaction(statement, Config.getGlobal().MYSQL);

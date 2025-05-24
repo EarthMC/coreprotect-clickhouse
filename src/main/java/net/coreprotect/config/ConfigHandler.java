@@ -44,7 +44,7 @@ public class ConfigHandler extends Queue {
     public static final int EDITION_VERSION = 2;
     public static final String EDITION_BRANCH = VersionUtils.getBranch();
     public static final String EDITION_NAME = VersionUtils.getPluginName();
-    public static final String COMMUNITY_EDITION = "Community Edition";
+    public static final String COMMUNITY_EDITION = "ClickHouse Edition";
     public static final String JAVA_VERSION = "11.0";
     public static final String MINECRAFT_VERSION = "1.16";
     public static final String LATEST_VERSION = "1.21";
@@ -202,46 +202,13 @@ public class ConfigHandler extends Queue {
         Database.closeConnection();
 
         if (!Config.getGlobal().MYSQL) {
-            try {
-                File tempFile = File.createTempFile("CoreProtect_" + System.currentTimeMillis(), ".tmp");
-                tempFile.setExecutable(true);
-
-                boolean canExecute = false;
-                try {
-                    canExecute = tempFile.canExecute();
-                }
-                catch (Exception exception) {
-                    // execute access denied by security manager
-                }
-
-                if (!canExecute) {
-                    File tempFolder = new File("cache");
-                    boolean exists = tempFolder.exists();
-                    if (!exists) {
-                        tempFolder.mkdir();
-                    }
-                    System.setProperty("java.io.tmpdir", "cache");
-                }
-
-                tempFile.delete();
-
-                Class.forName("org.sqlite.JDBC");
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
+            throw new IllegalStateException("SQLite databases are not supported.");
         }
         else {
             HikariConfig config = new HikariConfig();
-            try {
-                Class.forName("com.mysql.cj.jdbc.Driver");
-                config.setDriverClassName("com.mysql.cj.jdbc.Driver");
-            }
-            catch (Exception e) {
-                config.setDriverClassName("com.mysql.jdbc.Driver");
-            }
+            config.setDriverClassName("com.clickhouse.jdbc.ClickHouseDriver");
 
-            config.setJdbcUrl("jdbc:mysql://" + ConfigHandler.host + ":" + ConfigHandler.port + "/" + ConfigHandler.database);
+            config.setJdbcUrl("jdbc:clickhouse://" + ConfigHandler.host + ":" + ConfigHandler.port + "/" + ConfigHandler.database);
             config.setUsername(ConfigHandler.username);
             config.setPassword(ConfigHandler.password);
             config.setMaximumPoolSize(ConfigHandler.maximumPoolSize);

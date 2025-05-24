@@ -22,15 +22,14 @@ public class UsernameLogger {
             int idRow = -1;
             String userRow = null;
             String query = "SELECT rowid as id, user FROM " + ConfigHandler.prefix + "user WHERE uuid = ? LIMIT 0, 1";
-            PreparedStatement preparedStmt = connection.prepareStatement(query);
-            preparedStmt.setString(1, uuid);
-            ResultSet rs = preparedStmt.executeQuery();
-            while (rs.next()) {
-                idRow = rs.getInt("id");
-                userRow = rs.getString("user").toLowerCase(Locale.ROOT);
+            try (PreparedStatement preparedStmt = connection.prepareStatement(query)) {
+                preparedStmt.setString(1, uuid);
+                ResultSet rs = preparedStmt.executeQuery();
+                while (rs.next()) {
+                    idRow = rs.getInt("id");
+                    userRow = rs.getString("user").toLowerCase(Locale.ROOT);
+                }
             }
-            rs.close();
-            preparedStmt.close();
 
             boolean update = false;
             if (userRow == null) {
@@ -42,12 +41,12 @@ public class UsernameLogger {
             }
 
             if (update) {
-                preparedStmt = connection.prepareStatement("UPDATE " + ConfigHandler.prefix + "user SET user = ?, uuid = ? WHERE rowid = ?");
-                preparedStmt.setString(1, user);
-                preparedStmt.setString(2, uuid);
-                preparedStmt.setInt(3, idRow);
-                preparedStmt.executeUpdate();
-                preparedStmt.close();
+                try (PreparedStatement preparedStmt = connection.prepareStatement("ALTER TABLE " + ConfigHandler.prefix + "user UPDATE user = ?, uuid = ? WHERE rowid = ?")) {
+                    preparedStmt.setString(1, user);
+                    preparedStmt.setString(2, uuid);
+                    preparedStmt.setInt(3, idRow);
+                    preparedStmt.executeUpdate();
+                }
 
                 /*
                     //Commented out to prevent potential issues if player manages to stay logged in with old username
@@ -62,15 +61,14 @@ public class UsernameLogger {
             else {
                 boolean foundUUID = false;
                 query = "SELECT rowid as id FROM " + ConfigHandler.prefix + "username_log WHERE uuid = ? AND user = ? LIMIT 0, 1";
-                PreparedStatement preparedStatement = connection.prepareStatement(query);
-                preparedStatement.setString(1, uuid);
-                preparedStatement.setString(2, user);
-                rs = preparedStatement.executeQuery();
-                while (rs.next()) {
-                    foundUUID = true;
+                try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+                    preparedStatement.setString(1, uuid);
+                    preparedStatement.setString(2, user);
+                    ResultSet rs = preparedStatement.executeQuery();
+                    while (rs.next()) {
+                        foundUUID = true;
+                    }
                 }
-                rs.close();
-                preparedStatement.close();
 
                 if (!foundUUID) {
                     update = true;
@@ -78,12 +76,12 @@ public class UsernameLogger {
             }
 
             if (update && configUsernames == 1) {
-                preparedStmt = connection.prepareStatement("INSERT INTO " + ConfigHandler.prefix + "username_log (time, uuid, user) VALUES (?, ?, ?)");
-                preparedStmt.setInt(1, time);
-                preparedStmt.setString(2, uuid);
-                preparedStmt.setString(3, user);
-                preparedStmt.executeUpdate();
-                preparedStmt.close();
+                try (PreparedStatement preparedStmt = connection.prepareStatement("INSERT INTO " + ConfigHandler.prefix + "username_log (time, uuid, user) VALUES (?, ?, ?)")) {
+                    preparedStmt.setInt(1, time);
+                    preparedStmt.setString(2, uuid);
+                    preparedStmt.setString(3, user);
+                    preparedStmt.executeUpdate();
+                }
             }
 
             ConfigHandler.playerIdCache.put(user.toLowerCase(Locale.ROOT), idRow);

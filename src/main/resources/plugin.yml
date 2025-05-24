@@ -1,4 +1,5 @@
-name: CoreProtect
+name: coreprotect-clickhouse
+provides: [CoreProtect]
 main: net.coreprotect.CoreProtect
 version: ${project.version}
 branch: ${project.branch}

@@ -6,6 +6,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.coreprotect.utility.serialize.Bytes;
 import org.bukkit.block.Block;
 
 import net.coreprotect.config.Config;
@@ -75,7 +76,7 @@ public class BlockAPI {
                         String resultAction = results.getString("action");
                         int resultType = results.getInt("type");
                         String resultData = results.getString("data");
-                        byte[] resultBlockData = results.getBytes("blockdata");
+                        byte[] resultBlockData = Bytes.fromBlobString(results.getString("blockdata"));
                         String resultRolledBack = results.getString("rolled_back");
 
                         if (ConfigHandler.playerIdCacheReversed.get(resultUserId) == null) {
