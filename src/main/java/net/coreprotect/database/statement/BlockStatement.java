@@ -16,7 +16,6 @@ public class BlockStatement {
 
     public static void insert(PreparedStatement preparedStmt, int batchCount, int time, int id, int wid, int x, int y, int z, int type, int data, List<Object> meta, String blockData, int action, int rolledBack) {
         try {
-            byte[] bBlockData = BlockUtils.stringToByteData(blockData, type);
             byte[] byteData = null;
 
             if (meta != null) {
@@ -32,10 +31,10 @@ public class BlockStatement {
             preparedStmt.setInt(7, type);
             preparedStmt.setInt(8, data);
             preparedStmt.setString(9, Bytes.toBlobString(byteData));
-            preparedStmt.setString(10, Bytes.toBlobString(bBlockData));
+            preparedStmt.setString(10, BlockUtils.stringToStringData(blockData, type));
             preparedStmt.setInt(11, action);
             preparedStmt.setInt(12, rolledBack);
-            preparedStmt.setInt(13, CoreProtect.getInstance().rowNumbers().nextRowId("block", preparedStmt.getConnection()));
+            preparedStmt.setLong(13, CoreProtect.getInstance().rowNumbers().nextRowIdLong("block", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % 1000 == 0) {

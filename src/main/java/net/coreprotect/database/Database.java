@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import net.coreprotect.CoreProtect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -319,38 +320,39 @@ public class Database extends Queue {
 
     private static void createTableStructures(String prefix, Statement statement) throws SQLException {
         String orderBy;
+        final String partitionBy = "PARTITION BY " + Config.getGlobal().PARTITIONING;
 
         // Art map
         orderBy = "ORDER BY rowid";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "art_map(rowid UInt64, id UInt32, art String) ENGINE = MergeTree " + orderBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "art_map(rowid UInt64, id UInt32, art LowCardinality(String)) ENGINE = MergeTree " + orderBy);
 
         // Block
-        orderBy = "ORDER BY (wid, x, z, time)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "block(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, type UInt32, data UInt32, meta String, blockdata String, action UInt8, rolled_back Bool) ENGINE = MergeTree " + orderBy);
+        orderBy = "ORDER BY (wid, x, z, time, user, type)";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "block(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, type UInt32, data UInt32, meta String, blockdata LowCardinality(String), action UInt8, rolled_back Bool) ENGINE = MergeTree " + orderBy + partitionBy);
 
         // Chat
-        orderBy = "ORDER BY (wid, x, z, time)";
+        orderBy = "ORDER BY (user, time, wid, x, z)";
         statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "chat(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Float32, z Int32, message String) ENGINE = MergeTree " + orderBy);
 
         // Command
-        orderBy = "ORDER BY (wid, x, z, time)";
+        orderBy = "ORDER BY (user, time, wid, x, z)";
         statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "command(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Float32, z Int32, message String) ENGINE = MergeTree " + orderBy);
 
         // Container
-        orderBy = "ORDER BY (wid, x, z, time)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "container(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, type UInt32, data UInt32, amount UInt32, metadata String, action UInt8, rolled_back Bool) ENGINE = MergeTree " + orderBy);
+        orderBy = "ORDER BY (wid, x, z, time, user, type)";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "container(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, type UInt32, data UInt32, amount UInt32, metadata String, action UInt8, rolled_back Bool) ENGINE = MergeTree " + orderBy + partitionBy);
 
         // Item
-        orderBy = "ORDER BY (wid, x, z, time)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "item(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, type UInt32, data String, amount UInt32, action UInt8, rolled_back Bool) ENGINE = MergeTree " + orderBy);
+        orderBy = "ORDER BY (wid, x, z, time, user, type)";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "item(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, type UInt32, data String, amount UInt32, action UInt8, rolled_back Bool) ENGINE = MergeTree " + orderBy + partitionBy);
 
         // Database lock
         orderBy = "ORDER BY rowid";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "database_lock(rowid UInt64, status UInt8, time UInt32) ENGINE = ReplacingMergeTree " + orderBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "database_lock(rowid UInt64, status UInt8, time UInt32) ENGINE = MergeTree " + orderBy);
 
         // Entity
-        orderBy = "ORDER BY rowid";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "entity(rowid UInt64, time UInt32, data String) ENGINE = MergeTree " + orderBy);
+        orderBy = "ORDER BY (rowid)";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "entity(rowid UInt64, time UInt32, data String) ENGINE = MergeTree " + orderBy + partitionBy);
 
         // Entity map
         orderBy = "ORDER BY rowid";
@@ -358,14 +360,14 @@ public class Database extends Queue {
 
         // Material map
         orderBy = "ORDER BY rowid";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "material_map(rowid UInt64, id UInt32, material String) ENGINE = MergeTree " + orderBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "material_map(rowid UInt64, id UInt32, material LowCardinality(String)) ENGINE = MergeTree " + orderBy);
 
         // Blockdata map
-        orderBy = "ORDER BY id";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "blockdata_map(rowid UInt64, id UInt32, data String) ENGINE = MergeTree " + orderBy);
+        orderBy = "ORDER BY rowid";
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "blockdata_map(rowid UInt64, id UInt32, data LowCardinality(String)) ENGINE = MergeTree " + orderBy);
 
         // Session
-        orderBy = "ORDER BY (wid, x, z, time)";
+        orderBy = "ORDER BY (user, time, wid, x, z)";
         statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "session(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Float32, z Int32, action Bool) ENGINE = MergeTree " + orderBy);
 
         // Sign
@@ -378,11 +380,11 @@ public class Database extends Queue {
 
         // User
         orderBy = "ORDER BY rowid";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "user(rowid UInt64, time UInt32, user String, uuid String) ENGINE = MergeTree " + orderBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "user(rowid UInt64, time UInt32, user String, uuid UUID) ENGINE = MergeTree " + orderBy);
 
         // Username log
         orderBy = "ORDER BY rowid";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "username_log(rowid UInt64, time UInt32, uuid String, user String) ENGINE = MergeTree " + orderBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "username_log(rowid UInt64, time UInt32, uuid UUID, user String) ENGINE = MergeTree " + orderBy);
 
         // Version
         orderBy = "ORDER BY rowid";
@@ -390,7 +392,7 @@ public class Database extends Queue {
 
         // World
         orderBy = "ORDER BY rowid";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "world(rowid UInt64, id UInt32, world String) ENGINE = MergeTree " + orderBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "world(rowid UInt64, id UInt32, world LowCardinality(String)) ENGINE = MergeTree " + orderBy);
     }
 
     // Generate a unique snowflake via ch

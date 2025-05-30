@@ -33,7 +33,12 @@ public class BlockUtils {
     }
 
     public static byte[] stringToByteData(String string, int type) {
-        byte[] result = null;
+        final String data = stringToStringData(string, type);
+        return data == null ? null : data.getBytes(StandardCharsets.UTF_8);
+    }
+
+    public static @org.jspecify.annotations.Nullable String stringToStringData(String string, int type) {
+        String result = null;
         if (string != null) {
             Material material = MaterialUtils.getType(type);
             if (material == null) {
@@ -65,7 +70,7 @@ public class BlockUtils {
                 return result;
             }
 
-            result = string.getBytes(StandardCharsets.UTF_8);
+            return string;
         }
 
         return result;

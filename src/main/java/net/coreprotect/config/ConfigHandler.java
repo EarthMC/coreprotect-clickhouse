@@ -13,6 +13,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -205,6 +207,8 @@ public class ConfigHandler extends Queue {
             throw new IllegalStateException("SQLite databases are not supported.");
         }
         else {
+            Configurator.setLevel("com.clickhouse.jdbc.ClickHouseDriver", Level.OFF); // disable "v2 driver" spam
+
             HikariConfig config = new HikariConfig();
             config.setDriverClassName("com.clickhouse.jdbc.ClickHouseDriver");
 

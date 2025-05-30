@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import net.coreprotect.CoreProtect;
 import net.coreprotect.utility.serialize.Bytes;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -222,6 +223,7 @@ public class LookupRaw extends Queue {
 
     static ResultSet rawLookupResultSet(Statement statement, CommandSender user, List<String> checkUuids, List<String> checkUsers, List<Object> restrictList, Map<Object, Boolean> excludeList, List<String> excludeUserList, List<Integer> actionList, Location location, Integer[] radius, Long[] rowData, long startTime, long endTime, int limitOffset, int limitCount, boolean restrictWorld, boolean lookup, boolean count) {
         ResultSet results = null;
+        String query = "";
 
         try {
             List<Integer> validActions = Arrays.asList(0, 1, 2, 3);
@@ -246,7 +248,6 @@ public class LookupRaw extends Queue {
             String excludeUsers = "";
             String unionLimit = "";
             String index = "";
-            String query = "";
 
             if (checkUuids.size() > 0) {
                 String list = "";
@@ -538,16 +539,16 @@ public class LookupRaw extends Queue {
 
             String baseQuery = ((!includeEntity.isEmpty() || !excludeEntity.isEmpty()) ? queryEntity : queryBlock);
             if (limitOffset > -1 && limitCount > -1) {
-                queryLimit = " LIMIT " + limitOffset + ", " + limitCount + "";
-                unionLimit = " ORDER BY time DESC, id DESC LIMIT " + (limitOffset + limitCount) + "";
+                queryLimit = " LIMIT " + limitCount + " OFFSET " + limitOffset;
+                unionLimit = " ORDER BY time DESC LIMIT " + limitCount + " OFFSET " + limitOffset;
             }
 
-            String rows = "rowid as id,time,user,wid,x,y,z,action,type,data,meta,blockdata,rolled_back";
+            String rows = "rowid as id,time,user,wid,x,y,z,action,type,toString(data) as data,meta,blockdata,rolled_back";
             String queryOrder = " ORDER BY rowid DESC";
 
             if (actionList.contains(4) || actionList.contains(5)) {
                 queryTable = "container";
-                rows = "rowid as id,time,user,wid,x,y,z,action,type,data,rolled_back,amount,metadata";
+                rows = "rowid as id,time,user,wid,x,y,z,action,type,toString(data) as data,rolled_back,amount,metadata";
             }
             else if (actionList.contains(6) || actionList.contains(7)) {
                 queryTable = "chat";
@@ -574,12 +575,12 @@ public class LookupRaw extends Queue {
             }
             else if (actionList.contains(11)) {
                 queryTable = "item";
-                rows = "rowid as id,time,user,wid,x,y,z,type,data as metadata,0 as data,amount,action,0 as rolled_back";
+                rows = "rowid as id,time,user,wid,x,y,z,type,data as metadata,'0' as data,amount,action,0 as rolled_back";
             }
 
             if (count) {
                 rows = "COUNT(*) as count";
-                queryLimit = " LIMIT 0, 3";
+                queryLimit = " LIMIT 3";
                 queryOrder = "";
                 unionLimit = "";
             }
@@ -601,7 +602,7 @@ public class LookupRaw extends Queue {
                     }
                 }
 
-                unionSelect = "(";
+                // unionSelect = "("; // CH - use 'select * from' from above
             }
             else {
                 if (queryTable.equals("block")) {
@@ -623,7 +624,7 @@ public class LookupRaw extends Queue {
             boolean itemLookup = inventoryQuery;
             if ((lookup && actionList.size() == 0) || (itemLookup && !actionList.contains(0))) {
                 if (!count) {
-                    rows = "rowid as id,time,user,wid,x,y,z,type,meta as metadata,data,-1 as amount,action,rolled_back";
+                    rows = "rowid as id,time,user,wid,x,y,z,type,meta as metadata,toString(data) as data,-1 as amount,action,rolled_back";
                 }
 
                 if (inventoryQuery) {
@@ -635,7 +636,7 @@ public class LookupRaw extends Queue {
                     }
 
                     if (!count) {
-                        rows = "rowid as id,time,user,wid,x,y,z,type,meta as metadata,data,1 as amount,action,rolled_back";
+                        rows = "rowid as id,time,user,wid,x,y,z,type,meta as metadata,toString(data) as data,1 as amount,action,rolled_back";
                     }
                 }
 
@@ -649,12 +650,12 @@ public class LookupRaw extends Queue {
 
             if (itemLookup) {
                 if (!count) {
-                    rows = "rowid as id,time,user,wid,x,y,z,type,metadata,data,amount,action,rolled_back";
+                    rows = "rowid as id,time,user,wid,x,y,z,type,metadata,toString(data) as data,amount,action,rolled_back";
                 }
                 query = query + unionSelect + "SELECT " + "'1' as tbl," + rows + " FROM " + ConfigHandler.prefix + "container WHERE" + queryBlock + unionLimit + ") UNION ALL ";
 
                 if (!count) {
-                    rows = "rowid as id,time,user,wid,x,y,z,type,data as metadata,0 as data,amount,action,rolled_back";
+                    rows = "rowid as id,time,user,wid,x,y,z,type,data as metadata,'0' as data,amount,action,rolled_back";
                     queryOrder = " ORDER BY time DESC, tbl DESC, id DESC";
                 }
 
@@ -677,7 +678,7 @@ public class LookupRaw extends Queue {
             results = statement.executeQuery(query);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            CoreProtect.getInstance().getSLF4JLogger().warn("An exception occurred while executing query '{}'", query, e);
         }
 
         return results;

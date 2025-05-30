@@ -2,8 +2,7 @@ package net.coreprotect.utility.serialize;
 
 import org.jspecify.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.charset.StandardCharsets;
 
 public class Bytes {
     public static String toBlobString(byte[] array) {
@@ -11,13 +10,7 @@ public class Bytes {
             return null;
         }
 
-        final List<String> list = new ArrayList<>();
-
-        for (final byte b : array) {
-            list.add(String.valueOf(b));
-        }
-
-        return String.join(",", list);
+        return new String(array, StandardCharsets.ISO_8859_1);
     }
 
     public static byte @Nullable [] fromBlobString(String blob) {
@@ -25,15 +18,6 @@ public class Bytes {
             return null;
         }
 
-        final int size = Math.toIntExact(blob.codePoints().filter(ch -> ch == ',').count() + 1);
-        final byte[] array = new byte[size];
-
-        final String[] parts = blob.split(",");
-
-        for (int i = 0; i < parts.length; i++) {
-            array[i] = Byte.parseByte(parts[i]);
-        }
-
-        return array;
+        return blob.getBytes(StandardCharsets.ISO_8859_1);
     }
 }

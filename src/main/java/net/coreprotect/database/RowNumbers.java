@@ -16,7 +16,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Simulates auto_increment
@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RowNumbers {
     private final CoreProtect plugin;
     private final Path file;
-    private final Map<String, AtomicInteger> counters = new ConcurrentHashMap<>();
+    private final Map<String, AtomicLong> counters = new ConcurrentHashMap<>();
     private final Object initializationLock = new Object();
 
     public RowNumbers(final CoreProtect plugin) {
@@ -33,7 +33,11 @@ public class RowNumbers {
     }
 
     public int nextRowId(final String tableName, Connection connection) {
-        AtomicInteger counter = this.counters.get(tableName);
+        return Math.toIntExact(nextRowIdLong(tableName, connection));
+    }
+
+    public long nextRowIdLong(final String tableName, Connection connection) {
+        AtomicLong counter = this.counters.get(tableName);
         if (counter != null) {
             return counter.getAndIncrement();
         }
@@ -50,7 +54,7 @@ public class RowNumbers {
                  ResultSet rs = statement.executeQuery()) {
 
                 if (rs.next()) {
-                    counter = new AtomicInteger(rs.getInt(1));
+                    counter = new AtomicLong(rs.getLong(1));
 
                     this.counters.put(tableName, counter);
                     return counter.getAndIncrement();
@@ -60,7 +64,7 @@ public class RowNumbers {
             }
 
             // fallback
-            this.counters.put(tableName, new AtomicInteger());
+            this.counters.put(tableName, new AtomicLong());
             return 0;
         }
     }
@@ -71,7 +75,7 @@ public class RowNumbers {
         }
 
         try {
-            Map<String, AtomicInteger> saved = new Gson().fromJson(Files.readString(this.file, StandardCharsets.UTF_8), new TypeToken<Map<String, AtomicInteger>>(){}.getType());
+            Map<String, AtomicLong> saved = new Gson().fromJson(Files.readString(this.file, StandardCharsets.UTF_8), new TypeToken<Map<String, AtomicLong>>(){}.getType());
             this.counters.putAll(saved);
         } catch (IOException e) {
             plugin.getSLF4JLogger().warn("Failed to read {}", this.file.getFileName(), e);
@@ -87,7 +91,7 @@ public class RowNumbers {
 
     public void save() {
         try {
-            Files.writeString(this.file, new Gson().toJson(counters, new TypeToken<Map<String, AtomicInteger>>(){}.getType()), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            Files.writeString(this.file, new Gson().toJson(counters, new TypeToken<Map<String, AtomicLong>>(){}.getType()), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (IOException e) {
             plugin.getSLF4JLogger().warn("Failed to save {}", this.file.getFileName(), e);
         }
