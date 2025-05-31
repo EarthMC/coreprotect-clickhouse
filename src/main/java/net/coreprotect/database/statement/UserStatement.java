@@ -27,6 +27,8 @@ public class UserStatement {
             preparedStmt.setInt(1, unixtimestamp);
             preparedStmt.setString(2, user);
             preparedStmt.setInt(3, id);
+
+            preparedStmt.execute();
         }
         catch (Exception e) {
             e.printStackTrace();
