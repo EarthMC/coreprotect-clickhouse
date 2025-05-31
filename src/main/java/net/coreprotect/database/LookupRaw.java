@@ -236,6 +236,7 @@ public class LookupRaw extends Queue {
             String queryBlock = "";
             String queryEntity = "";
             String queryLimit = "";
+            String queryLimitOffset = "";
             String queryTable = "block";
             String action = "";
             String actionExclude = "";
@@ -539,7 +540,8 @@ public class LookupRaw extends Queue {
 
             String baseQuery = ((!includeEntity.isEmpty() || !excludeEntity.isEmpty()) ? queryEntity : queryBlock);
             if (limitOffset > -1 && limitCount > -1) {
-                queryLimit = " LIMIT " + limitCount + " OFFSET " + limitOffset;
+                queryLimit = " LIMIT " + limitCount;
+                queryLimitOffset = queryLimit + " OFFSET " + limitOffset;
                 unionLimit = " ORDER BY time DESC LIMIT " + limitCount + " OFFSET " + limitOffset;
             }
 
@@ -644,7 +646,7 @@ public class LookupRaw extends Queue {
                     baseQuery = baseQuery.replace("action NOT IN(-1)", "action NOT IN(3)"); // if block specified for include/exclude, filter out entity data
                 }
 
-                query = unionSelect + "SELECT " + "'0' as tbl," + rows + " FROM " + ConfigHandler.prefix + "block " + index + "WHERE" + baseQuery + unionLimit + ") UNION ALL ";
+                query = unionSelect + "(SELECT " + "'0' as tbl," + rows + " FROM " + ConfigHandler.prefix + "block " + index + "WHERE" + baseQuery + unionLimit + ") UNION ALL ";
                 itemLookup = true;
             }
 
@@ -674,7 +676,13 @@ public class LookupRaw extends Queue {
                 query = "SELECT " + "'0' as tbl," + rows + " FROM " + ConfigHandler.prefix + queryTable + " " + index + "WHERE" + baseQuery;
             }
 
-            query = query + queryOrder + queryLimit + "";
+            query = query.replace(" action NOT IN(-1) AND", ""); // Remove placeholders
+            final boolean hasUnion = query.contains("UNION");
+            if (hasUnion) {
+                query += ")";
+            }
+
+            query += queryOrder + (hasUnion ? queryLimit : queryLimitOffset);
             results = statement.executeQuery(query);
         }
         catch (Exception e) {
