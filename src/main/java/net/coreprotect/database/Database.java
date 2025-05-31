@@ -332,11 +332,11 @@ public class Database extends Queue {
 
         // Chat
         orderBy = "ORDER BY (user, time, wid, x, z)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "chat(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Float32, z Int32, message String) ENGINE = MergeTree " + orderBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "chat(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, message String) ENGINE = MergeTree " + orderBy);
 
         // Command
         orderBy = "ORDER BY (user, time, wid, x, z)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "command(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Float32, z Int32, message String) ENGINE = MergeTree " + orderBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "command(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, message String) ENGINE = MergeTree " + orderBy);
 
         // Container
         orderBy = "ORDER BY (wid, x, z, time, user, type)";
@@ -368,7 +368,7 @@ public class Database extends Queue {
 
         // Session
         orderBy = "ORDER BY (user, time, wid, x, z)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "session(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Float32, z Int32, action Bool) ENGINE = MergeTree " + orderBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "session(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, action Bool) ENGINE = MergeTree " + orderBy);
 
         // Sign
         orderBy = "ORDER BY (wid, x, z, time)";
