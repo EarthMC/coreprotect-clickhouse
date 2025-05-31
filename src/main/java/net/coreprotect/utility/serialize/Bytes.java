@@ -14,7 +14,7 @@ public class Bytes {
     }
 
     public static byte @Nullable [] fromBlobString(String blob) {
-        if (blob == null || blob.isEmpty()) {
+        if (blob == null || blob.isEmpty() || "0".equals(blob)) {
             return null;
         }
 
