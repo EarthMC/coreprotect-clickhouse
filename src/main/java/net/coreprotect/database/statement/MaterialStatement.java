@@ -12,11 +12,11 @@ public class MaterialStatement {
         throw new IllegalStateException("Database class");
     }
 
-    public static void insert(PreparedStatement preparedStmt, int batchCount, int id, String name) {
+    public static void insert(PreparedStatement preparedStmt, int batchCount, int id, String name, String tableName) {
         try {
             preparedStmt.setInt(1, id);
             preparedStmt.setString(2, name);
-            preparedStmt.setInt(3, CoreProtect.getInstance().rowNumbers().nextRowId("material_map", preparedStmt.getConnection()));
+            preparedStmt.setInt(3, CoreProtect.getInstance().rowNumbers().nextRowId(tableName, preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % 1000 == 0) {

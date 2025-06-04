@@ -16,7 +16,7 @@ class MaterialInsertProcess {
             String query = "SELECT id FROM " + ConfigHandler.prefix + "material_map WHERE id = '" + materialId + "' LIMIT 0, 1";
             boolean hasMaterial = MaterialStatement.hasMaterial(statement, query);
             if (!hasMaterial) {
-                MaterialStatement.insert(preparedStmt, batchCount, materialId, (String) name);
+                MaterialStatement.insert(preparedStmt, batchCount, materialId, (String) name, "material_map");
 
                 // validate ID maps to ensure mapping wasn't reloaded from database prior to this insertion completing
                 ConfigHandler.materials.put((String) name, materialId);

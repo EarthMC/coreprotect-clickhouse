@@ -16,7 +16,7 @@ class ArtInsertProcess {
             String query = "SELECT id FROM " + ConfigHandler.prefix + "art_map WHERE id = '" + materialId + "' LIMIT 0, 1";
             boolean hasMaterial = MaterialStatement.hasMaterial(statement, query);
             if (!hasMaterial) {
-                MaterialStatement.insert(preparedStmt, batchCount, materialId, (String) name);
+                MaterialStatement.insert(preparedStmt, batchCount, materialId, (String) name, "art_map");
 
                 // validate ID maps to ensure mapping wasn't reloaded from database prior to this insertion completing
                 ConfigHandler.art.put((String) name, materialId);
