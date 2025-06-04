@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 
+import net.coreprotect.utility.serialize.SerializedItem;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -21,7 +22,6 @@ import org.bukkit.block.data.type.Jukebox;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -87,14 +87,14 @@ public class RollbackProcessor {
                 int rowAction = (Integer) row[8];
                 int rowRolledBack = MaterialUtils.rolledBack((Integer) row[9], false);
                 int rowWorldId = (Integer) row[10];
-                byte[] rowMeta = (byte[]) row[12];
-                byte[] rowBlockData = (byte[]) row[13];
-                String blockDataString = BlockUtils.byteDataToString(rowBlockData, rowTypeRaw);
+                String rowMeta = (String) row[12];
+                String rowBlockData = (String) row[13];
+                String blockDataString = BlockUtils.unpackBlockData(rowBlockData, rowTypeRaw);
                 Material rowType = MaterialUtils.getType(rowTypeRaw);
 
                 List<Object> meta = null;
                 if (rowMeta != null) {
-                    meta = RollbackUtil.deserializeMetadata(rowMeta);
+                    // meta = RollbackUtil.deserializeMetadata(rowMeta); // TODO CH - handle meta
                 }
 
                 BlockData blockData = null;
@@ -234,7 +234,7 @@ public class RollbackProcessor {
                         }
                     }
 
-                    if (countBlock && RollbackBlockHandler.processBlockChange(block, row, rollbackType, clearInventories, chunkChanges, countBlock, oldTypeMaterial, pendingChangeType, pendingChangeData, finalUserString, rawBlockData, changeType, changeBlockData, meta != null ? new ArrayList<>(meta) : null, blockData, rowUser, rowType, rowX, rowY, rowZ, rowTypeRaw, rowData, rowAction, rowWorldId, BlockUtils.byteDataToString((byte[]) row[13], rowTypeRaw))) {
+                    if (countBlock && RollbackBlockHandler.processBlockChange(block, row, rollbackType, clearInventories, chunkChanges, countBlock, oldTypeMaterial, pendingChangeType, pendingChangeData, finalUserString, rawBlockData, changeType, changeBlockData, meta != null ? new ArrayList<>(meta) : null, blockData, rowUser, rowType, rowX, rowY, rowZ, rowTypeRaw, rowData, rowAction, rowWorldId, BlockUtils.unpackBlockData((String) row[13], rowTypeRaw))) {
                         blockCount++;
                     }
                 }
@@ -255,7 +255,7 @@ public class RollbackProcessor {
             int lastY = 0;
             int lastZ = 0;
             int lastWorldId = 0;
-            String lastFace = "";
+            BlockFace lastFace = null;
 
             for (Object[] row : itemData) {
                 int[] rollbackHashData1 = ConfigHandler.rollbackHash.get(finalUserString);
@@ -272,7 +272,7 @@ public class RollbackProcessor {
                 int rowRolledBack = MaterialUtils.rolledBack((Integer) row[9], false);
                 int rowWorldId = (Integer) row[10];
                 int rowAmount = (Integer) row[11];
-                byte[] rowMetadata = (byte[]) row[12];
+                String rowMetadata = (String) row[12];
                 Material rowType = MaterialUtils.getType(rowTypeRaw);
 
                 int rolledBackInventory = MaterialUtils.rolledBack((Integer) row[9], true);
@@ -307,12 +307,17 @@ public class RollbackProcessor {
                         }
 
                         int action = rollbackType == 0 ? (inventoryAction ^ 1) : inventoryAction;
-                        ItemStack itemstack = new ItemStack(inventoryItem, rowAmount);
-                        Object[] populatedStack = RollbackItemHandler.populateItemStack(itemstack, rowMetadata);
-                        if (rowAction == ItemLogger.ITEM_REMOVE_ENDER || rowAction == ItemLogger.ITEM_ADD_ENDER) {
-                            RollbackUtil.modifyContainerItems(containerType, player.getEnderChest(), (Integer) populatedStack[0], ((ItemStack) populatedStack[2]).clone(), action ^ 1);
+
+                        SerializedItem item = SerializedItem.of(ItemStack.of(rowType, rowAmount));
+                        if (rowMetadata != null) {
+                            item = ItemUtils.deserializeItem(rowMetadata);
                         }
-                        int modifiedArmor = RollbackUtil.modifyContainerItems(containerType, player.getInventory(), (Integer) populatedStack[0], (ItemStack) populatedStack[2], action);
+
+                        if (rowAction == ItemLogger.ITEM_REMOVE_ENDER || rowAction == ItemLogger.ITEM_ADD_ENDER) {
+                            RollbackUtil.modifyContainerItems(containerType, player.getEnderChest(), item.slot(), item.itemStack().clone(), action ^ 1);
+                        }
+
+                        int modifiedArmor = RollbackUtil.modifyContainerItems(containerType, player.getInventory(), item.slot(), item.itemStack(), action);
                         if (modifiedArmor > -1) {
                             List<Integer> currentSortList = sortPlayers.getOrDefault(player, new ArrayList<>());
                             if (!currentSortList.contains(modifiedArmor)) {
@@ -331,14 +336,17 @@ public class RollbackProcessor {
                     }
 
                     if ((rollbackType == 0 && rowRolledBack == 0) || (rollbackType == 1 && rowRolledBack == 1)) {
-                        ItemStack itemstack = new ItemStack(rowType, rowAmount);
-                        Object[] populatedStack = RollbackItemHandler.populateItemStack(itemstack, rowMetadata);
-                        String faceData = (String) populatedStack[1];
+                        SerializedItem item = SerializedItem.of(new ItemStack(rowType, rowAmount));
+                        if (rowMetadata != null) {
+                            item = ItemUtils.deserializeItem(rowMetadata);
+                        }
+
+                        BlockFace faceData = item.faceData();
 
                         if (!containerInit || rowX != lastX || rowY != lastY || rowZ != lastZ || rowWorldId != lastWorldId || !faceData.equals(lastFace)) {
                             container = null; // container patch 2.14.0
                             String world = WorldUtils.getWorldName(rowWorldId);
-                            if (world.length() == 0) {
+                            if (world.isEmpty()) {
                                 continue;
                             }
 
@@ -365,14 +373,14 @@ public class RollbackProcessor {
                             else if (BlockGroup.CONTAINERS.contains(Material.ARMOR_STAND) || BlockGroup.CONTAINERS.contains(Material.ITEM_FRAME)) {
                                 for (Entity entity : block.getChunk().getEntities()) {
                                     if (entity.getLocation().getBlockX() == rowX && entity.getLocation().getBlockY() == rowY && entity.getLocation().getBlockZ() == rowZ) {
-                                        if (entity instanceof ArmorStand) {
-                                            container = ItemUtils.getEntityEquipment((LivingEntity) entity);
+                                        if (entity instanceof ArmorStand armorStand) {
+                                            container = ItemUtils.getEntityEquipment(armorStand);
                                             containerType = Material.ARMOR_STAND;
                                         }
-                                        else if (entity instanceof ItemFrame) {
+                                        else if (entity instanceof ItemFrame itemFrame) {
                                             container = entity;
                                             containerType = Material.ITEM_FRAME;
-                                            if (faceData.length() > 0 && (BlockFace.valueOf(faceData) == ((ItemFrame) entity).getFacing())) {
+                                            if (faceData == itemFrame.getFacing()) {
                                                 break;
                                             }
                                         }
@@ -387,7 +395,8 @@ public class RollbackProcessor {
                             lastFace = faceData;
                         }
 
-                        if (container != null) {
+                        Integer slot = item.slot();
+                        if (container != null && slot != null) {
                             int action = 0;
                             if (rollbackType == 0 && rowAction == 0) {
                                 action = 1;
@@ -397,10 +406,7 @@ public class RollbackProcessor {
                                 action = 1;
                             }
 
-                            int slot = (Integer) populatedStack[0];
-                            itemstack = (ItemStack) populatedStack[2];
-
-                            RollbackUtil.modifyContainerItems(containerType, container, slot, itemstack, action);
+                            RollbackUtil.modifyContainerItems(containerType, container, slot, item.itemStack(), action);
                             itemCount1 = itemCount1 + rowAmount;
                         }
                         containerInit = true;

@@ -33,10 +33,10 @@ public class RowNumbers {
     }
 
     public int nextRowId(final String tableName, Connection connection) {
-        return Math.toIntExact(nextRowIdLong(tableName, connection));
+        return Math.toIntExact(nextRowNumber(tableName, connection));
     }
 
-    public long nextRowIdLong(final String tableName, Connection connection) {
+    public long nextRowNumber(final String tableName, Connection connection) {
         AtomicLong counter = this.counters.get(tableName);
         if (counter != null) {
             return counter.getAndIncrement();

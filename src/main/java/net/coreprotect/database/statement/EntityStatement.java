@@ -1,7 +1,6 @@
 package net.coreprotect.database.statement;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -13,10 +12,8 @@ import net.coreprotect.database.FakeRowNumberResultSet;
 import net.coreprotect.utility.serialize.Bytes;
 import org.bukkit.block.BlockState;
 import org.bukkit.util.io.BukkitObjectInputStream;
-import org.bukkit.util.io.BukkitObjectOutputStream;
 
 import net.coreprotect.config.ConfigHandler;
-import net.coreprotect.database.Database;
 
 public class EntityStatement {
 
@@ -24,18 +21,11 @@ public class EntityStatement {
         throw new IllegalStateException("Database class");
     }
 
-    public static ResultSet insert(PreparedStatement preparedStmt, int time, List<Object> data) {
+    public static ResultSet insert(PreparedStatement preparedStmt, int time, String entityData) {
         try {
-            byte[] byte_data;
-            try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); BukkitObjectOutputStream oos = new BukkitObjectOutputStream(bos)) {
-                oos.writeObject(data);
-                oos.flush();
-                byte_data = bos.toByteArray();
-            }
-
             final int rowid = CoreProtect.getInstance().rowNumbers().nextRowId("entity", preparedStmt.getConnection());
             preparedStmt.setInt(1, time);
-            preparedStmt.setString(2, Bytes.toBlobString(byte_data));
+            preparedStmt.setString(2, entityData);
             preparedStmt.setInt(3, rowid);
             preparedStmt.execute();
 

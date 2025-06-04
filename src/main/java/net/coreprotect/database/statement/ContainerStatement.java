@@ -3,8 +3,6 @@ package net.coreprotect.database.statement;
 import java.sql.PreparedStatement;
 
 import net.coreprotect.CoreProtect;
-import net.coreprotect.utility.ItemUtils;
-import net.coreprotect.utility.serialize.Bytes;
 
 public class ContainerStatement {
 
@@ -12,9 +10,8 @@ public class ContainerStatement {
         throw new IllegalStateException("Database class");
     }
 
-    public static void insert(PreparedStatement preparedStmt, int batchCount, int time, int id, int wid, int x, int y, int z, int type, int data, int amount, Object metadata, int action, int rolledBack) {
+    public static void insert(PreparedStatement preparedStmt, int batchCount, int time, int id, int wid, int x, int y, int z, int type, int data, int amount, String itemData, int action, int rolledBack) {
         try {
-            byte[] byteData = ItemUtils.convertByteData(metadata);
             preparedStmt.setInt(1, time);
             preparedStmt.setInt(2, id);
             preparedStmt.setInt(3, wid);
@@ -24,7 +21,7 @@ public class ContainerStatement {
             preparedStmt.setInt(7, type);
             preparedStmt.setInt(8, data);
             preparedStmt.setInt(9, amount);
-            preparedStmt.setString(10, Bytes.toBlobString(byteData));
+            preparedStmt.setString(10, itemData);
             preparedStmt.setInt(11, action);
             preparedStmt.setInt(12, rolledBack);
             preparedStmt.setInt(13, CoreProtect.getInstance().rowNumbers().nextRowId("container", preparedStmt.getConnection()));

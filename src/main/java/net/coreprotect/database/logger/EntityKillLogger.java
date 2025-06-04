@@ -2,11 +2,10 @@ package net.coreprotect.database.logger;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.List;
 import java.util.Locale;
 
 import org.bukkit.Bukkit;
-import org.bukkit.block.BlockState;
+import org.bukkit.block.Block;
 
 import net.coreprotect.CoreProtect;
 import net.coreprotect.config.Config;
@@ -24,7 +23,7 @@ public class EntityKillLogger {
         throw new IllegalStateException("Database class");
     }
 
-    public static void log(PreparedStatement preparedStmt, PreparedStatement preparedStmt2, int batchCount, String user, BlockState block, List<Object> data, int type) {
+    public static void log(PreparedStatement preparedStmt, PreparedStatement preparedStmt2, int batchCount, String user, Block block, String entityData, int type) {
         try {
             if (ConfigHandler.blacklist.get(user.toLowerCase(Locale.ROOT)) != null) {
                 return;
@@ -47,7 +46,7 @@ public class EntityKillLogger {
             int z = block.getZ();
             int entity_key = 0;
 
-            ResultSet resultSet = EntityStatement.insert(preparedStmt2, time, data);
+            ResultSet resultSet = EntityStatement.insert(preparedStmt2, time, entityData);
             if (Database.hasReturningKeys()) {
                 resultSet.next();
                 entity_key = resultSet.getInt(1);

@@ -38,8 +38,8 @@ public class LookupConverter {
                             results[newId] = (String) map[i];
                         }
                     }
-                    else if (i == 13 && map[i] instanceof byte[]) {
-                        results[newId] = BlockUtils.byteDataToString((byte[]) map[i], (int) map[6]);
+                    else if (i == 13 && map[i] instanceof String string) {
+                        results[newId] = BlockUtils.unpackBlockData(string, (int) map[6]);
                     }
                     else if (i > 0) { // skip rowid
                         if (map[i] instanceof Integer) {

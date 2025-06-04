@@ -123,12 +123,6 @@ public class ItemLogger {
         try {
             for (ItemStack item : items) {
                 if (item != null && item.getAmount() > 0 && !BlockUtils.isAir(item.getType())) {
-                    // Object[] metadata = new Object[] { slot, item.getItemMeta() };
-                    List<List<Map<String, Object>>> data = ItemMetaHandler.serialize(item, null, null, 0);
-                    if (data.size() == 0) {
-                        data = null;
-                    }
-
                     CoreProtectPreLogEvent event = new CoreProtectPreLogEvent(user);
                     if (Config.getGlobal().API_ENABLED && !Bukkit.isPrimaryThread()) {
                         CoreProtect.getInstance().getServer().getPluginManager().callEvent(event);
@@ -146,7 +140,7 @@ public class ItemLogger {
                     int z = location.getBlockZ();
                     int typeId = MaterialUtils.getBlockId(item.getType().name(), true);
                     int amount = item.getAmount();
-                    ItemStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, typeId, data, amount, action);
+                    ItemStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, typeId, item, amount, action);
                 }
             }
         }

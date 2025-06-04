@@ -87,7 +87,7 @@ public class ChestTransactionLookup {
                 long resultTime = results.getLong("time");
                 int resultAmount = results.getInt("amount");
                 int resultRolledBack = results.getInt("rolled_back");
-                byte[] resultMetadata = Bytes.fromBlobString(results.getString("metadata"));
+                String resultMetadata = results.getString("metadata");
                 String tooltip = ItemUtils.getEnchantments(resultMetadata, resultType, resultAmount);
 
                 if (ConfigHandler.playerIdCacheReversed.get(resultUserId) == null) {

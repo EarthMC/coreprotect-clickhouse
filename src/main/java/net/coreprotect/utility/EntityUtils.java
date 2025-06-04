@@ -1,13 +1,22 @@
 package net.coreprotect.utility;
 
+import java.util.Base64;
 import java.util.Locale;
+import java.util.Optional;
 
+import io.papermc.paper.entity.EntitySerializationFlag;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
 import net.coreprotect.bukkit.BukkitAdapter;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.consumer.Queue;
+import org.bukkit.entity.LivingEntity;
 
 public class EntityUtils extends Queue {
 
@@ -130,5 +139,22 @@ public class EntityUtils extends Queue {
         }
 
         return result;
+    }
+
+    @SuppressWarnings("deprecation")
+    public static String serializeEntity(Entity entity) {
+        return Base64.getEncoder().encodeToString(Bukkit.getUnsafe().serializeEntity(entity, EntitySerializationFlag.FORCE));
+    }
+
+    @SuppressWarnings("deprecation")
+    public static Entity deserializeEntity(String entityData, World world) {
+        final Entity entity = Bukkit.getUnsafe().deserializeEntity(Base64.getDecoder().decode(entityData), world);
+
+        // attempt to resurrect dead entities
+        if (entity instanceof LivingEntity livingEntity && livingEntity.getHealth() <= 0) {
+            livingEntity.setHealth(Optional.ofNullable(livingEntity.getAttribute(Attribute.MAX_HEALTH)).map(AttributeInstance::getValue).orElse(20D));
+        }
+
+        return entity;
     }
 }

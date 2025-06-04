@@ -165,8 +165,8 @@ public class LookupRaw extends Queue {
                     int resultData = 0;
                     int resultAmount = -1;
                     int resultTable = 0;
-                    byte[] resultMeta = null;
-                    byte[] resultBlockData = null;
+                    String resultMeta = null;
+                    String resultBlockData = null;
                     long resultId = results.getLong("id");
                     int resultUserId = results.getInt("user");
                     int resultAction = results.getInt("action");
@@ -182,14 +182,14 @@ public class LookupRaw extends Queue {
                     if ((lookup && actionList.size() == 0) || actionList.contains(4) || actionList.contains(5) || actionList.contains(11)) {
                         resultData = results.getInt("data");
                         resultAmount = results.getInt("amount");
-                        resultMeta = Bytes.fromBlobString(results.getString("metadata"));
+                        resultMeta = results.getString("metadata");
                         resultTable = results.getInt("tbl");
                         hasTbl = true;
                     }
                     else {
                         resultData = results.getInt("data");
-                        resultMeta = Bytes.fromBlobString(results.getString("meta"));
-                        resultBlockData = Bytes.fromBlobString(results.getString("blockdata"));
+                        resultMeta = results.getString("meta");
+                        resultBlockData = results.getString("blockdata");
                     }
 
                     boolean valid = true;

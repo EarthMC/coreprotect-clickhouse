@@ -19,7 +19,7 @@ public class BlockStatement {
             byte[] byteData = null;
 
             if (meta != null) {
-                byteData = ItemUtils.convertByteData(meta);
+                byteData = ItemUtils.convertByteData(meta); // TODO CH
             }
 
             preparedStmt.setInt(1, time);
@@ -34,7 +34,7 @@ public class BlockStatement {
             preparedStmt.setString(10, BlockUtils.stringToStringData(blockData, type));
             preparedStmt.setInt(11, action);
             preparedStmt.setInt(12, rolledBack);
-            preparedStmt.setLong(13, CoreProtect.getInstance().rowNumbers().nextRowIdLong("block", preparedStmt.getConnection()));
+            preparedStmt.setLong(13, CoreProtect.getInstance().rowNumbers().nextRowNumber("block", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % 1000 == 0) {

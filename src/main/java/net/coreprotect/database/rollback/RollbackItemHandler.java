@@ -21,6 +21,7 @@ public class RollbackItemHandler {
      *            The metadata as a byte array
      * @return Object array containing [slot, facing, itemstack]
      */
+    @Deprecated
     public static Object[] populateItemStack(ItemStack itemstack, byte[] metadata) {
         if (metadata != null) {
             try {

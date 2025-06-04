@@ -253,12 +253,11 @@ public class Queue {
         queueStandardData(consumerId, currentConsumer, new String[] { null, null }, name);
     }
 
-    protected static void queueEntityKill(String user, Location location, List<Object> data, EntityType type) {
+    protected static void queueEntityKill(String user, Location location, EntityType type, String entityData) {
         int currentConsumer = Consumer.currentConsumer;
         int consumerId = Consumer.newConsumerId(currentConsumer);
         addConsumer(currentConsumer, new Object[] { consumerId, Process.ENTITY_KILL, null, 0, null, 0, 0 });
-        Consumer.consumerObjectList.get(currentConsumer).put(consumerId, data);
-        queueStandardData(consumerId, currentConsumer, new String[] { user, null }, new Object[] { location.getBlock().getState(), type, null });
+        queueStandardData(consumerId, currentConsumer, new String[] { user, null }, new Object[] { location.getBlock(), type, entityData });
     }
 
     protected static void queueEntitySpawn(String user, BlockState block, EntityType type, int data) {

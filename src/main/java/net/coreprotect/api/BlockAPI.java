@@ -76,7 +76,7 @@ public class BlockAPI {
                         String resultAction = results.getString("action");
                         int resultType = results.getInt("type");
                         String resultData = results.getString("data");
-                        byte[] resultBlockData = Bytes.fromBlobString(results.getString("blockdata"));
+                        String resultBlockData = results.getString("blockdata");
                         String resultRolledBack = results.getString("rolled_back");
 
                         if (ConfigHandler.playerIdCacheReversed.get(resultUserId) == null) {
@@ -84,7 +84,7 @@ public class BlockAPI {
                         }
 
                         String resultUser = ConfigHandler.playerIdCacheReversed.get(resultUserId);
-                        String blockData = BlockUtils.byteDataToString(resultBlockData, resultType);
+                        String blockData = BlockUtils.unpackBlockData(resultBlockData, resultType);
 
                         String[] lookupData = new String[] { resultTime, resultUser, String.valueOf(x), String.valueOf(y), String.valueOf(z), String.valueOf(resultType), resultData, resultAction, resultRolledBack, String.valueOf(worldId), blockData };
 

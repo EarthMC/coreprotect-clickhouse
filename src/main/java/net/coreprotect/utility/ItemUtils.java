@@ -6,14 +6,18 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
+import net.coreprotect.CoreProtect;
+import net.coreprotect.utility.serialize.SerializedItem;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
-import org.bukkit.entity.EntityType;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.inventory.EntityEquipment;
@@ -28,8 +32,13 @@ import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.model.BlockGroup;
 import net.coreprotect.utility.serialize.ItemMetaHandler;
+import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 public class ItemUtils {
+
+    public static final Gson DEFAULT_GSON = new Gson();
 
     private ItemUtils() {
         throw new IllegalStateException("Utility class");
@@ -334,7 +343,8 @@ public class ItemUtils {
     public static void updateInventory(org.bukkit.entity.Player player) {
         player.updateInventory();
     }
-    
+
+    @Deprecated
     public static byte[] convertByteData(Object data) {
         byte[] result = null;
         if (data == null) {
@@ -372,14 +382,13 @@ public class ItemUtils {
 
         return null;
     }
-    
-    public static String getEnchantments(byte[] metadata, int type, int amount) {
-        if (metadata == null) {
+
+    public static String getEnchantments(String itemData, int type, int amount) {
+        if (itemData == null || itemData.isEmpty()) {
             return "";
         }
 
-        ItemStack item = new ItemStack(MaterialUtils.getType(type), amount);
-        item = (ItemStack) net.coreprotect.database.rollback.Rollback.populateItemStack(item, metadata)[2];
+        ItemStack item = deserializeItem(itemData, MaterialUtils.getType(type), amount).itemStack();
         String displayName = item.hasItemMeta() && item.getItemMeta().hasDisplayName() ? item.getItemMeta().getDisplayName() : "";
         StringBuilder message = new StringBuilder(Color.ITALIC + displayName + Color.GREY);
 
@@ -427,6 +436,7 @@ public class ItemUtils {
         return result;
     }
 
+    @Deprecated
     public static Map<String, Object> serializeItemStack(ItemStack itemStack, String faceData, int slot) {
         Map<String, Object> itemMap = new HashMap<>();
         if (itemStack != null && !itemStack.getType().equals(Material.AIR)) {
@@ -440,6 +450,7 @@ public class ItemUtils {
         return itemMap;
     }
 
+    @Deprecated
     public static ItemStack unserializeItemStack(Object value) {
         ItemStack result = null;
         if (value instanceof Map) {
@@ -455,5 +466,88 @@ public class ItemUtils {
         }
 
         return result;
+    }
+
+    /**
+     * @param itemStack An item stack
+     * @return Whether this item stack has data other than type and amount.
+     */
+    public static boolean hasNonTrivialData(@NonNull ItemStack itemStack) {
+        return !itemStack.equals(ItemStack.of(itemStack.getType(), itemStack.getAmount()));
+    }
+
+    public static String serializeItem(@NonNull ItemStack itemStack) {
+        return serializeItem(itemStack, -1);
+    }
+
+    public static String serializeItem(@NonNull ItemStack itemStack, int slot) {
+        return serializeItem(itemStack, slot, null);
+    }
+
+    @SuppressWarnings("deprecation")
+    public static String serializeItem(@NonNull ItemStack itemStack, int slot, BlockFace faceData) {
+        final JsonObject object = Bukkit.getUnsafe().serializeItemAsJson(itemStack);
+
+        if (slot >= 0) {
+            object.addProperty("co_slot", slot);
+        }
+
+        if (faceData != null) {
+            object.addProperty("co_facing", faceData.name());
+        }
+
+        return DEFAULT_GSON.toJson(object);
+    }
+
+    public static SerializedItem deserializeItem(@Nullable String itemString) {
+        return deserializeItem(itemString, null, 0);
+    }
+
+    @SuppressWarnings("deprecation")
+    public static SerializedItem deserializeItem(@Nullable String itemString, @Nullable Material type, int amount) {
+        if (itemString == null || itemString.isEmpty() || "0".equals(itemString)) {
+            if (type != null) {
+                return SerializedItem.of(ItemStack.of(type, amount));
+            } else {
+                return null;
+            }
+        }
+
+        final JsonObject object;
+        try {
+            object = DEFAULT_GSON.fromJson(itemString, JsonObject.class);
+        } catch (JsonSyntaxException e) {
+            CoreProtect.getInstance().getSLF4JLogger().warn("Failed to deserialize an item stack from {}", itemString, e);
+            return null;
+        }
+
+        Integer slot = null;
+        BlockFace faceData = null;
+
+        if (object.has("co_slot")) {
+            slot = object.get("co_slot").getAsInt();
+        }
+
+        if (object.has("co_facing")) {
+            try {
+                faceData = BlockFace.valueOf(object.get("co_facing").getAsString());
+            } catch (IllegalArgumentException ignored) {}
+        }
+
+        final ItemStack itemStack = Bukkit.getUnsafe().deserializeItemFromJson(object);
+
+        return new SerializedItem(itemStack, slot, faceData);
+    }
+
+    public static BlockFace parseBlockFaceOrNull(@Nullable String blockFace) {
+        if (blockFace == null) {
+            return null;
+        }
+
+        try {
+            return BlockFace.valueOf(blockFace);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 } 

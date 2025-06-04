@@ -207,7 +207,7 @@ public class ContainerLogger extends Queue {
         }
     }
 
-    protected static void logTransaction(PreparedStatement preparedStmt, int batchCount, String user, Material type, String faceData, ItemStack[] items, int action, Location location) {
+    protected static void logTransaction(PreparedStatement preparedStmt, int batchCount, String user, Material containerType, String faceData, ItemStack[] items, int action, Location location) {
         try {
             if (ConfigHandler.blacklist.get(user.toLowerCase(Locale.ROOT)) != null) {
                 return;
@@ -217,12 +217,6 @@ public class ContainerLogger extends Queue {
             for (ItemStack item : items) {
                 if (item != null) {
                     if (item.getAmount() > 0 && !BlockUtils.isAir(item.getType())) {
-                        // Object[] metadata = new Object[] { slot, item.getItemMeta() };
-                        List<List<Map<String, Object>>> metadata = ItemMetaHandler.serialize(item, type, faceData, slot);
-                        if (metadata.size() == 0) {
-                            metadata = null;
-                        }
-
                         CoreProtectPreLogEvent event = new CoreProtectPreLogEvent(user);
                         if (Config.getGlobal().API_ENABLED && !Bukkit.isPrimaryThread()) {
                             CoreProtect.getInstance().getServer().getPluginManager().callEvent(event);
@@ -230,6 +224,12 @@ public class ContainerLogger extends Queue {
 
                         if (event.isCancelled()) {
                             return;
+                        }
+
+                        // slot is only relevant when face data is set
+                        String itemData = null;
+                        if ((faceData != null && !faceData.isEmpty()) || ItemUtils.hasNonTrivialData(item)) {
+                            itemData = ItemUtils.serializeItem(item, slot, ItemUtils.parseBlockFaceOrNull(faceData));
                         }
 
                         int userId = UserStatement.getId(preparedStmt, event.getUser(), true);
@@ -241,7 +241,7 @@ public class ContainerLogger extends Queue {
                         int typeId = MaterialUtils.getBlockId(item.getType().name(), true);
                         int data = 0;
                         int amount = item.getAmount();
-                        ContainerStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, typeId, data, amount, metadata, action, 0);
+                        ContainerStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, typeId, data, amount, itemData, action, 0);
                         success = true;
                     }
                 }

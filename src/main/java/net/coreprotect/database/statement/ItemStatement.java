@@ -4,7 +4,7 @@ import java.sql.PreparedStatement;
 
 import net.coreprotect.CoreProtect;
 import net.coreprotect.utility.ItemUtils;
-import net.coreprotect.utility.serialize.Bytes;
+import org.bukkit.inventory.ItemStack;
 
 public class ItemStatement {
 
@@ -12,9 +12,8 @@ public class ItemStatement {
         throw new IllegalStateException("Database class");
     }
 
-    public static void insert(PreparedStatement preparedStmt, int batchCount, int time, int id, int wid, int x, int y, int z, int type, Object data, int amount, int action) {
+    public static void insert(PreparedStatement preparedStmt, int batchCount, int time, int id, int wid, int x, int y, int z, int type, ItemStack item, int amount, int action) {
         try {
-            byte[] byteData = ItemUtils.convertByteData(data);
             preparedStmt.setInt(1, time);
             preparedStmt.setInt(2, id);
             preparedStmt.setInt(3, wid);
@@ -22,7 +21,7 @@ public class ItemStatement {
             preparedStmt.setInt(5, y);
             preparedStmt.setInt(6, z);
             preparedStmt.setInt(7, type);
-            preparedStmt.setString(8, Bytes.toBlobString(byteData));
+            preparedStmt.setString(8, ItemUtils.hasNonTrivialData(item) ? ItemUtils.serializeItem(item) : null);
             preparedStmt.setInt(9, amount);
             preparedStmt.setInt(10, action);
             preparedStmt.setInt(11, 0); // rolled_back

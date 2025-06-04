@@ -64,12 +64,14 @@ import net.coreprotect.thread.CacheHandler;
 import net.coreprotect.thread.Scheduler;
 import net.coreprotect.utility.WorldUtils;
 
+@Deprecated
 public class EntityUtil {
 
     private EntityUtil() {
         throw new IllegalStateException("Utility class");
     }
 
+    @Deprecated
     public static void spawnEntity(final BlockState block, final EntityType type, final List<Object> list) {
         if (type == null) {
             return;

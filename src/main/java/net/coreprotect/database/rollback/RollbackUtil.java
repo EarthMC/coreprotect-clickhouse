@@ -275,6 +275,7 @@ public class RollbackUtil extends Lookup {
     }
 
     @SuppressWarnings("unchecked")
+    @Deprecated
     public static Object[] populateItemStack(ItemStack itemstack, Object list) {
         int slot = 0;
         String faceData = "";

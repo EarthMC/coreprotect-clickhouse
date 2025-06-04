@@ -76,7 +76,7 @@ public class BlockUtils {
         return result;
     }
 
-    public static String byteDataToString(byte[] data, int type) {
+    public static String unpackBlockData(String data, int type) {
         String result = "";
         if (data != null) {
             Material material = MaterialUtils.getType(type);
@@ -84,8 +84,8 @@ public class BlockUtils {
                 return result;
             }
 
-            result = new String(data, StandardCharsets.UTF_8);
-            if (result.length() > 0) {
+            result = data;
+            if (!result.isEmpty()) {
                 if (result.matches("\\d+")) {
                     result = result + ",";
                 }
@@ -94,7 +94,7 @@ public class BlockUtils {
                     ArrayList<String> blockDataArray = new ArrayList<>();
                     for (String blockData : blockDataSplit) {
                         String block = MaterialUtils.getBlockDataString(Integer.parseInt(blockData));
-                        if (block.length() > 0) {
+                        if (!block.isEmpty()) {
                             blockDataArray.add(block);
                         }
                     }
@@ -127,7 +127,7 @@ public class BlockUtils {
     }
 
     public static boolean isAir(Material type) {
-        return (type == Material.AIR || type == Material.CAVE_AIR || type == Material.VOID_AIR);
+        return type.isAir();
     }
 
     public static boolean solidBlock(Material type) {
