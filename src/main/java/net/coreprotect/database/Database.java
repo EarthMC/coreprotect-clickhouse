@@ -352,7 +352,7 @@ public class Database extends Queue {
 
         // Entity
         orderBy = "ORDER BY (rowid)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "entity(rowid UInt64, time UInt32, data String) ENGINE = MergeTree " + orderBy + partitionBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "entity(rowid UInt64, time UInt32, data JSON) ENGINE = MergeTree " + orderBy + partitionBy);
 
         // Entity map
         orderBy = "ORDER BY rowid";

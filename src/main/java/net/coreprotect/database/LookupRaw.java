@@ -577,7 +577,7 @@ public class LookupRaw extends Queue {
             }
             else if (actionList.contains(11)) {
                 queryTable = "item";
-                rows = "rowid as id,time,user,wid,x,y,z,type,data as metadata,'0' as data,amount,action,0 as rolled_back";
+                rows = "rowid as id,time,user,wid,x,y,z,type,toString(data) as metadata,'0' as data,amount,action,0 as rolled_back";
             }
 
             if (count) {
@@ -652,12 +652,12 @@ public class LookupRaw extends Queue {
 
             if (itemLookup) {
                 if (!count) {
-                    rows = "rowid as id,time,user,wid,x,y,z,type,metadata,toString(data) as data,amount,action,rolled_back";
+                    rows = "rowid as id,time,user,wid,x,y,z,type,toString(metadata) as metadata,toString(data) as data,amount,action,rolled_back";
                 }
                 query = query + unionSelect + "SELECT " + "'1' as tbl," + rows + " FROM " + ConfigHandler.prefix + "container WHERE" + queryBlock + unionLimit + ") UNION ALL ";
 
                 if (!count) {
-                    rows = "rowid as id,time,user,wid,x,y,z,type,data as metadata,'0' as data,amount,action,rolled_back";
+                    rows = "rowid as id,time,user,wid,x,y,z,type,toString(data) as metadata,'0' as data,amount,action,rolled_back";
                     queryOrder = " ORDER BY time DESC, tbl DESC, id DESC";
                 }
 

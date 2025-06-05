@@ -1,11 +1,15 @@
 package net.coreprotect.utility;
 
-import java.util.Base64;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import io.papermc.paper.entity.EntitySerializationFlag;
-import org.bukkit.Bukkit;
+import net.coreprotect.utility.serialize.JsonEntitySerializer;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
@@ -19,6 +23,8 @@ import net.coreprotect.consumer.Queue;
 import org.bukkit.entity.LivingEntity;
 
 public class EntityUtils extends Queue {
+
+    public static final Gson DEFAULT_GSON = new Gson();
 
     private static final String NAMESPACE = "minecraft:";
 
@@ -141,16 +147,67 @@ public class EntityUtils extends Queue {
         return result;
     }
 
-    @SuppressWarnings("deprecation")
+    private static final Set<String> REMOVE_IF_ZERO = Set.of(
+            "AbsorptionAmount",
+            "Age",
+            "AgeLocked",
+            "CanPickUpLoot",
+            "ForcedAge",
+            "Health",
+            "OnGround",
+            "PersistenceRequired",
+            "LeftHanded",
+            "Invulnerable",
+            "BatFlags"
+    );
+
     public static String serializeEntity(Entity entity) {
-        return Base64.getEncoder().encodeToString(Bukkit.getUnsafe().serializeEntity(entity, EntitySerializationFlag.FORCE));
+        final JsonObject object = JsonEntitySerializer.serializeEntityAsJson(entity, EntitySerializationFlag.FORCE);
+
+        // remove things we do not care about
+        object.remove("WorldUUIDLeast");
+        object.remove("WorldUUIDMost");
+        object.remove("Motion");
+        object.remove("UUID");
+        object.remove("HurtTime");
+        object.remove("fall_distance");
+        object.remove("HurtByTimestamp");
+        object.remove("FallFlying");
+
+        if (object.has("last_hurt_by_mob") && object.get("last_hurt_by_mob").equals(object.get("last_hurt_by_player"))) {
+            object.remove("last_hurt_by_mob");
+        }
+
+        object.remove("last_hurt_by_player_memory_time");
+        object.remove("ticks_since_last_hurt_by_mob");
+        object.remove("PortalCooldown");
+        object.remove("DeathTime");
+        object.remove("Fire");
+        object.remove("InLove"); // what is love?
+
+        if (object.has("Paper.FireOverride") && "NOT_SET".equals(object.get("Paper.FireOverride").getAsString())) {
+            object.remove("Paper.FireOverride");
+        }
+
+        for (final String removeIfZero : REMOVE_IF_ZERO) {
+            if (object.has(removeIfZero)) {
+                final JsonElement element = object.get(removeIfZero);
+
+                if (element != null && element.isJsonPrimitive() && element.getAsInt() == 0) {
+                    object.remove(removeIfZero);
+                }
+            }
+        }
+
+        // TODO: escape . characters in keys
+
+        return DEFAULT_GSON.toJson(object);
     }
 
-    @SuppressWarnings("deprecation")
     public static Entity deserializeEntity(String entityData, World world) {
-        final Entity entity = Bukkit.getUnsafe().deserializeEntity(Base64.getDecoder().decode(entityData), world);
+        final JsonObject object = DEFAULT_GSON.fromJson(entityData, JsonObject.class);
+        final Entity entity = JsonEntitySerializer.deserializeEntityFromJson(object, world);
 
-        // attempt to resurrect dead entities
         if (entity instanceof LivingEntity livingEntity && livingEntity.getHealth() <= 0) {
             livingEntity.setHealth(Optional.ofNullable(livingEntity.getAttribute(Attribute.MAX_HEALTH)).map(AttributeInstance::getValue).orElse(20D));
         }
