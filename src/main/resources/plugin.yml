@@ -1,8 +1,8 @@
 name: coreprotect-clickhouse
 provides: [CoreProtect]
 main: net.coreprotect.CoreProtect
-version: ${project.version}
-branch: ${project.branch}
+version: ${version}
+branch: ${branch}
 api-version: '1.21.4'
 folia-supported: true
 website: http://coreprotect.net

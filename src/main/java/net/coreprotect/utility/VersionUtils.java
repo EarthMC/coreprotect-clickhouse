@@ -127,7 +127,7 @@ public class VersionUtils {
             branch = YamlConfiguration.loadConfiguration(reader).getString("branch");
             reader.close();
 
-            if (branch == null || branch.equals("${project.branch}")) {
+            if (branch == null || branch.equals("${branch}")) {
                 branch = "";
             }
             if (branch.startsWith("-")) {

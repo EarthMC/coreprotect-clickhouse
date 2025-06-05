@@ -1,0 +1,7 @@
+[versions]
+hikaricp = "6.3.0"
+paper = "1.21.4-R0.1-SNAPSHOT"
+
+[libraries]
+hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
+paper = { module = "io.papermc.paper:paper-api", version.ref = "paper" }

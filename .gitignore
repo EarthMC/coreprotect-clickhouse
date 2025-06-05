@@ -63,13 +63,7 @@ mvnw.cmd
 #################
 ## Gradle
 #################
-
 build
-gradle
-
-# Wrapper files
-gradlew
-gradlew.bat
 
 #################
 ## Visual Studio
@@ -105,7 +99,6 @@ gradlew.bat
 .builds
 *.dotCover
 
-## TODO: If you have NuGet Package Restore enabled, uncomment this
 #packages/
 
 # Visual C++ cache files
@@ -200,7 +193,6 @@ refactor.txt
 .mtj.tmp/
 
 # Package Files #
-*.jar
 *.war
 *.ear
 *.zip
@@ -218,3 +210,5 @@ docs/dev/
 !/src/main/java/net/coreprotect/utility/extensions/Extensions.java
 /.apt_generated/
 /.apt_generated_tests/
+
+run/
