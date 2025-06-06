@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 
+import net.coreprotect.utility.serialize.SerializedBlockMeta;
 import net.coreprotect.utility.serialize.SerializedItem;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -92,9 +93,9 @@ public class RollbackProcessor {
                 String blockDataString = BlockUtils.unpackBlockData(rowBlockData, rowTypeRaw);
                 Material rowType = MaterialUtils.getType(rowTypeRaw);
 
-                List<Object> meta = null;
+                SerializedBlockMeta meta = null;
                 if (rowMeta != null) {
-                    // meta = RollbackUtil.deserializeMetadata(rowMeta); // TODO CH - handle meta
+                    meta = BlockUtils.deserializeMeta(rowMeta);
                 }
 
                 BlockData blockData = null;
@@ -234,7 +235,7 @@ public class RollbackProcessor {
                         }
                     }
 
-                    if (countBlock && RollbackBlockHandler.processBlockChange(block, row, rollbackType, clearInventories, chunkChanges, countBlock, oldTypeMaterial, pendingChangeType, pendingChangeData, finalUserString, rawBlockData, changeType, changeBlockData, meta != null ? new ArrayList<>(meta) : null, blockData, rowUser, rowType, rowX, rowY, rowZ, rowTypeRaw, rowData, rowAction, rowWorldId, BlockUtils.unpackBlockData((String) row[13], rowTypeRaw))) {
+                    if (countBlock && RollbackBlockHandler.processBlockChange(block, row, rollbackType, clearInventories, chunkChanges, countBlock, oldTypeMaterial, pendingChangeType, pendingChangeData, finalUserString, rawBlockData, changeType, changeBlockData, meta, blockData, rowUser, rowType, rowX, rowY, rowZ, rowTypeRaw, rowData, rowAction, rowWorldId, BlockUtils.unpackBlockData((String) row[13], rowTypeRaw))) {
                         blockCount++;
                     }
                 }

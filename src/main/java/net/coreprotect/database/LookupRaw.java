@@ -9,7 +9,6 @@ import java.util.Locale;
 import java.util.Map;
 
 import net.coreprotect.CoreProtect;
-import net.coreprotect.utility.serialize.Bytes;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -545,7 +544,7 @@ public class LookupRaw extends Queue {
                 unionLimit = " ORDER BY time DESC LIMIT " + limitCount + " OFFSET " + limitOffset;
             }
 
-            String rows = "rowid as id,time,user,wid,x,y,z,action,type,toString(data) as data,meta,blockdata,rolled_back";
+            String rows = "rowid as id,time,user,wid,x,y,z,action,type,toString(data) as data,toString(meta) as meta,blockdata,rolled_back";
             String queryOrder = " ORDER BY rowid DESC";
 
             if (actionList.contains(4) || actionList.contains(5)) {
@@ -626,7 +625,7 @@ public class LookupRaw extends Queue {
             boolean itemLookup = inventoryQuery;
             if ((lookup && actionList.size() == 0) || (itemLookup && !actionList.contains(0))) {
                 if (!count) {
-                    rows = "rowid as id,time,user,wid,x,y,z,type,meta as metadata,toString(data) as data,-1 as amount,action,rolled_back";
+                    rows = "rowid as id,time,user,wid,x,y,z,type,toString(meta) as metadata,toString(data) as data,-1 as amount,action,rolled_back";
                 }
 
                 if (inventoryQuery) {
@@ -638,7 +637,7 @@ public class LookupRaw extends Queue {
                     }
 
                     if (!count) {
-                        rows = "rowid as id,time,user,wid,x,y,z,type,meta as metadata,toString(data) as data,1 as amount,action,rolled_back";
+                        rows = "rowid as id,time,user,wid,x,y,z,type,toString(meta) as metadata,toString(data) as data,1 as amount,action,rolled_back";
                     }
                 }
 
@@ -682,7 +681,7 @@ public class LookupRaw extends Queue {
                 query += ")";
             }
 
-            query += queryOrder + (hasUnion ? queryLimit : queryLimitOffset);
+            query += queryOrder + (hasUnion ? queryLimit : queryLimitOffset) + " SETTINGS output_format_json_quote_64bit_integers=0";
             results = statement.executeQuery(query);
         }
         catch (Exception e) {

@@ -1,9 +1,9 @@
 package net.coreprotect.database.logger;
 
 import java.sql.PreparedStatement;
-import java.util.List;
 import java.util.Locale;
 
+import net.coreprotect.utility.serialize.SerializedBlockMeta;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -24,7 +24,7 @@ public class BlockBreakLogger {
         throw new IllegalStateException("Database class");
     }
 
-    public static void log(PreparedStatement preparedStmt, int batchCount, String user, Location location, int type, int data, List<Object> meta, String blockData, String overrideData) {
+    public static void log(PreparedStatement preparedStmt, int batchCount, String user, Location location, int type, int data, SerializedBlockMeta meta, String blockData, String overrideData) {
         try {
             if (ConfigHandler.blacklist.get(user.toLowerCase(Locale.ROOT)) != null || location == null) {
                 return;

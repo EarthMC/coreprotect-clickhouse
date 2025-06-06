@@ -1,8 +1,8 @@
 package net.coreprotect.consumer.process;
 
 import java.sql.PreparedStatement;
-import java.util.List;
 
+import net.coreprotect.utility.serialize.SerializedBlockMeta;
 import org.bukkit.Material;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Skull;
@@ -17,7 +17,7 @@ class BlockBreakProcess {
     static void process(PreparedStatement preparedStmt, PreparedStatement preparedStmtSkulls, int batchCount, int processId, int id, Material blockType, int blockDataId, Material replaceType, int forceData, String user, Object object, String blockData) {
         if (object instanceof BlockState) {
             BlockState block = (BlockState) object;
-            List<Object> meta = BlockUtils.processMeta(block);
+            SerializedBlockMeta meta = BlockUtils.processMeta(block);
             if (block instanceof Skull) {
                 SkullBreakLogger.log(preparedStmt, preparedStmtSkulls, batchCount, user, block);
             }

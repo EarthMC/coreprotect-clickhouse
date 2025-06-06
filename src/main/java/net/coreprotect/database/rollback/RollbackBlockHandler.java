@@ -1,19 +1,19 @@
 package net.coreprotect.database.rollback;
 
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.bukkit.DyeColor;
+import net.coreprotect.utility.serialize.SerializedBlockMeta;
+import net.coreprotect.utility.serialize.SerializedItem;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Banner;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.block.CreatureSpawner;
-import org.bukkit.block.banner.Pattern;
 import org.bukkit.block.data.Bisected;
 import org.bukkit.block.data.Bisected.Half;
 import org.bukkit.block.data.BlockData;
@@ -109,7 +109,7 @@ public class RollbackBlockHandler extends Queue {
      *            The block data as a string
      * @return Updated count status
      */
-    public static boolean processBlockChange(Block block, Object[] row, int rollbackType, boolean clearInventories, Map<Block, BlockData> chunkChanges, boolean countBlock, Material oldTypeMaterial, Material pendingChangeType, BlockData pendingChangeData, String finalUserString, BlockData rawBlockData, Material changeType, BlockData changeBlockData, ArrayList<Object> meta, BlockData blockData, String rowUser, Material rowType, int rowX, int rowY, int rowZ, int rowTypeRaw, int rowData, int rowAction, int rowWorldId, String blockDataString) {
+    public static boolean processBlockChange(Block block, Object[] row, int rollbackType, boolean clearInventories, Map<Block, BlockData> chunkChanges, boolean countBlock, Material oldTypeMaterial, Material pendingChangeType, BlockData pendingChangeData, String finalUserString, BlockData rawBlockData, Material changeType, BlockData changeBlockData, SerializedBlockMeta meta, BlockData blockData, String rowUser, Material rowType, int rowX, int rowY, int rowZ, int rowTypeRaw, int rowData, int rowAction, int rowWorldId, String blockDataString) {
 
         boolean changeBlock = true;
         World bukkitWorld = block.getWorld();
@@ -328,12 +328,12 @@ public class RollbackBlockHandler extends Queue {
                     if (countBlock) {
                         updateBlockCount(finalUserString, 1);
                     }
-                    if (meta != null) {
+                    if (meta != null && meta.items() != null) {
                         Inventory inventory = BlockUtils.getContainerInventory(block.getState(), false);
-                        for (Object value : meta) {
-                            ItemStack item = ItemUtils.unserializeItemStackLegacy(value);
+                        for (SerializedItem serializedItem : meta.items()) {
+                            ItemStack item = serializedItem.itemStack();
                             if (item != null) {
-                                RollbackUtil.modifyContainerItems(rowType, inventory, 0, item, 1);
+                                RollbackUtil.modifyContainerItems(rowType, inventory, serializedItem.slot() == null ? 0 : serializedItem.slot(), item, 1);
                             }
                         }
                     }
@@ -345,15 +345,10 @@ public class RollbackBlockHandler extends Queue {
                         updateBlockCount(finalUserString, 1);
                     }
 
-                    if (meta != null) {
+                    if (meta != null && meta.command() != null) {
                         CommandBlock commandBlock = (CommandBlock) block.getState();
-                        for (Object value : meta) {
-                            if (value instanceof String) {
-                                String string = (String) value;
-                                commandBlock.setCommand(string);
-                                commandBlock.update();
-                            }
-                        }
+                        commandBlock.setCommand(meta.command());
+                        commandBlock.update();
                     }
                     return false;
                 }
@@ -442,26 +437,17 @@ public class RollbackBlockHandler extends Queue {
                     block.setBlockData(bed, false);
                     return false;
                 }
-                else if (rowType.name().endsWith("_BANNER")) {
+                else if (Tag.BANNERS.isTagged(rowType)) {
                     BlockUtils.prepareTypeAndData(chunkChanges, block, rowType, blockData, false);
                     if (countBlock) {
                         updateBlockCount(finalUserString, 1);
                     }
 
-                    if (meta != null) {
+                    if (meta != null && meta.bannerData() != null) {
                         Banner banner = (Banner) block.getState();
 
-                        for (Object value : meta) {
-                            if (value instanceof DyeColor) {
-                                banner.setBaseColor((DyeColor) value);
-                            }
-                            else if (value instanceof Map) {
-                                @SuppressWarnings("unchecked")
-                                Pattern pattern = new Pattern((Map<String, Object>) value);
-                                banner.addPattern(pattern);
-                            }
-                        }
-
+                        banner.setBaseColor(meta.bannerData().baseColor());
+                        banner.setPatterns(meta.bannerData().patterns());
                         banner.update();
                     }
                     return false;

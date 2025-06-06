@@ -1,15 +1,14 @@
 package net.coreprotect.utility;
 
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.papermc.paper.entity.EntitySerializationFlag;
 import net.coreprotect.utility.serialize.JsonEntitySerializer;
+import net.coreprotect.utility.serialize.JsonSerialization;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
@@ -23,8 +22,6 @@ import net.coreprotect.consumer.Queue;
 import org.bukkit.entity.LivingEntity;
 
 public class EntityUtils extends Queue {
-
-    public static final Gson DEFAULT_GSON = new Gson();
 
     private static final String NAMESPACE = "minecraft:";
 
@@ -158,7 +155,8 @@ public class EntityUtils extends Queue {
             "PersistenceRequired",
             "LeftHanded",
             "Invulnerable",
-            "BatFlags"
+            "BatFlags",
+            "IsBaby"
     );
 
     public static String serializeEntity(Entity entity) {
@@ -201,11 +199,11 @@ public class EntityUtils extends Queue {
 
         // TODO: escape . characters in keys
 
-        return DEFAULT_GSON.toJson(object);
+        return JsonSerialization.DEFAULT_GSON.toJson(object);
     }
 
     public static Entity deserializeEntity(String entityData, World world) {
-        final JsonObject object = DEFAULT_GSON.fromJson(entityData, JsonObject.class);
+        final JsonObject object = JsonSerialization.DEFAULT_GSON.fromJson(entityData, JsonObject.class);
         final Entity entity = JsonEntitySerializer.deserializeEntityFromJson(object, world);
 
         if (entity instanceof LivingEntity livingEntity && livingEntity.getHealth() <= 0) {

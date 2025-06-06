@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import net.coreprotect.utility.serialize.BannerData;
+import net.coreprotect.utility.serialize.JsonSerialization;
+import net.coreprotect.utility.serialize.SerializedBlockMeta;
+import net.coreprotect.utility.serialize.SerializedItem;
 import org.bukkit.Material;
 import org.bukkit.block.Banner;
 import org.bukkit.block.Block;
@@ -13,7 +17,6 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.CommandBlock;
 import org.bukkit.block.Jukebox;
 import org.bukkit.block.ShulkerBox;
-import org.bukkit.block.banner.Pattern;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Waterlogged;
 import org.bukkit.inventory.BlockInventoryHolder;
@@ -229,45 +232,36 @@ public class BlockUtils {
         return inventory;
     }
 
-    public static List<Object> processMeta(BlockState block) {
-        List<Object> meta = new ArrayList<>();
-        try {
-            if (block instanceof CommandBlock) {
-                CommandBlock commandBlock = (CommandBlock) block;
-                String command = commandBlock.getCommand();
-                if (command.length() > 0) {
-                    meta.add(command);
-                }
-            }
-            else if (block instanceof Banner) {
-                Banner banner = (Banner) block;
-                meta.add(banner.getBaseColor());
-                List<Pattern> patterns = banner.getPatterns();
-                for (Pattern pattern : patterns) {
-                    meta.add(pattern.serialize());
-                }
-            }
-            else if (block instanceof ShulkerBox) {
-                ShulkerBox shulkerBox = (ShulkerBox) block;
-                ItemStack[] inventory = shulkerBox.getSnapshotInventory().getStorageContents();
-                int slot = 0;
-                for (ItemStack itemStack : inventory) {
-                    Map<Integer, Object> itemMap = ItemUtils.serializeItemStackLegacy(itemStack, null, slot);
-                    if (itemMap.size() > 0) {
-                        meta.add(itemMap);
-                    }
-                    slot++;
-                }
+    public static SerializedBlockMeta processMeta(BlockState block) {
+        if (block instanceof CommandBlock commandBlock) {
+            String command = commandBlock.getCommand();
+            if (!command.isEmpty()) {
+                return new SerializedBlockMeta(command, null, null);
             }
         }
-        catch (Exception e) {
-            e.printStackTrace();
+        else if (block instanceof Banner banner) {
+            return new SerializedBlockMeta(null, null, new BannerData(banner.getBaseColor(), banner.getPatterns()));
+        }
+        else if (block instanceof ShulkerBox shulkerBox) {
+            ItemStack[] inventory = shulkerBox.getSnapshotInventory().getStorageContents();
+            List<SerializedItem> items = new ArrayList<>();
+
+            int slot = 0;
+            for (ItemStack itemStack : inventory) {
+                if (itemStack != null && !itemStack.isEmpty()) {
+                    items.add(new SerializedItem(itemStack, slot, null));
+                }
+                slot++;
+            }
+
+            return new SerializedBlockMeta(null, items, null);
         }
 
-        if (meta.isEmpty()) {
-            meta = null;
-        }
-        return meta;
+        return null;
+    }
+
+    public static SerializedBlockMeta deserializeMeta(String metaJson) {
+        return JsonSerialization.GSON.fromJson(metaJson, SerializedBlockMeta.class);
     }
 
     public static ItemStack[] getJukeboxItem(Jukebox blockState) {

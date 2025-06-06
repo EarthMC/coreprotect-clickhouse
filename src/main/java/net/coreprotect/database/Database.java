@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import net.coreprotect.CoreProtect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -328,7 +327,7 @@ public class Database extends Queue {
 
         // Block
         orderBy = "ORDER BY (wid, x, z, time, user, type)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "block(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, type UInt32, data UInt32, meta String, blockdata LowCardinality(String), action UInt8, rolled_back Bool) ENGINE = MergeTree " + orderBy + partitionBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "block(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int32, z Int32, type UInt32, data UInt32, meta JSON, blockdata LowCardinality(String), action UInt8, rolled_back Bool) ENGINE = MergeTree " + orderBy + partitionBy);
 
         // Chat
         orderBy = "ORDER BY (user, time, wid, x, z)";

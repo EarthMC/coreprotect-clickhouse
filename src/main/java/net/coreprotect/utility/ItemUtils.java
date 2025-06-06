@@ -8,10 +8,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import net.coreprotect.CoreProtect;
+import net.coreprotect.utility.serialize.JsonSerialization;
 import net.coreprotect.utility.serialize.SerializedItem;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -36,8 +36,6 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 public class ItemUtils {
-
-    public static final Gson DEFAULT_GSON = new Gson();
 
     private ItemUtils() {
         throw new IllegalStateException("Utility class");
@@ -495,7 +493,7 @@ public class ItemUtils {
             object.addProperty("co_facing", faceData.name());
         }
 
-        return DEFAULT_GSON.toJson(object);
+        return JsonSerialization.DEFAULT_GSON.toJson(object);
     }
 
     public static SerializedItem deserializeItem(@Nullable String itemString) {
@@ -514,7 +512,7 @@ public class ItemUtils {
 
         final JsonObject object;
         try {
-            object = DEFAULT_GSON.fromJson(itemString, JsonObject.class);
+            object = JsonSerialization.DEFAULT_GSON.fromJson(itemString, JsonObject.class);
         } catch (JsonSyntaxException e) {
             CoreProtect.getInstance().getSLF4JLogger().warn("Failed to deserialize an item stack from {}", itemString, e);
             return null;
@@ -524,12 +522,12 @@ public class ItemUtils {
         BlockFace faceData = null;
 
         if (object.has("co_slot")) {
-            slot = object.get("co_slot").getAsInt();
+            slot = object.remove("co_slot").getAsInt();
         }
 
         if (object.has("co_facing")) {
             try {
-                faceData = BlockFace.valueOf(object.get("co_facing").getAsString());
+                faceData = BlockFace.valueOf(object.remove("co_facing").getAsString());
             } catch (IllegalArgumentException ignored) {}
         }
 
