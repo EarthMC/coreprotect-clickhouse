@@ -1,11 +1,14 @@
 package net.coreprotect.utility;
 
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.papermc.paper.entity.EntitySerializationFlag;
 import net.coreprotect.utility.serialize.JsonEntitySerializer;
 import net.coreprotect.utility.serialize.JsonSerialization;
@@ -144,20 +147,22 @@ public class EntityUtils extends Queue {
         return result;
     }
 
-    private static final Set<String> REMOVE_IF_ZERO = Set.of(
-            "AbsorptionAmount",
-            "Age",
-            "AgeLocked",
-            "CanPickUpLoot",
-            "ForcedAge",
-            "Health",
-            "OnGround",
-            "PersistenceRequired",
-            "LeftHanded",
-            "Invulnerable",
-            "BatFlags",
-            "IsBaby"
-    );
+    private static final Map<String, Integer> REMOVABLE_DEFAULTS = Util.make(new HashMap<>(), map -> {
+            map.put("AbsorptionAmount", 0);
+            map.put("Age", 0);
+            map.put("AgeLocked", 0);
+            map.put("CanPickUpLoot", 0);
+            map.put("ForcedAge", 0);
+            map.put("Health", 0);
+            map.put("PersistenceRequired", 0);
+            map.put("LeftHanded", 0);
+            map.put("Invulnerable", 0);
+            map.put("BatFlags", 0);
+            map.put("IsBaby", 0);
+            map.put("Air", 300);
+            map.put("Bukkit.Aware", 1);
+            map.put("Bukkit.updateLevel", 2);
+    });
 
     public static String serializeEntity(Entity entity) {
         final JsonObject object = JsonEntitySerializer.serializeEntityAsJson(entity, EntitySerializationFlag.FORCE);
@@ -171,6 +176,7 @@ public class EntityUtils extends Queue {
         object.remove("fall_distance");
         object.remove("HurtByTimestamp");
         object.remove("FallFlying");
+        object.remove("OnGround");
 
         if (object.has("last_hurt_by_mob") && object.get("last_hurt_by_mob").equals(object.get("last_hurt_by_player"))) {
             object.remove("last_hurt_by_mob");
@@ -187,23 +193,19 @@ public class EntityUtils extends Queue {
             object.remove("Paper.FireOverride");
         }
 
-        for (final String removeIfZero : REMOVE_IF_ZERO) {
-            if (object.has(removeIfZero)) {
-                final JsonElement element = object.get(removeIfZero);
-
-                if (element != null && element.isJsonPrimitive() && element.getAsInt() == 0) {
-                    object.remove(removeIfZero);
+        for (final Map.Entry<String, Integer> entry : REMOVABLE_DEFAULTS.entrySet()) {
+            if (object.get(entry.getKey()) instanceof JsonPrimitive primitive) {
+                if (primitive.isNumber() && primitive.getAsInt() == entry.getValue()) {
+                    object.remove(entry.getKey());
                 }
             }
         }
 
-        // TODO: escape . characters in keys
-
-        return JsonSerialization.DEFAULT_GSON.toJson(object);
+        return JsonSerialization.DEFAULT_GSON.toJson(JsonSerialization.encodeKeys(object));
     }
 
     public static Entity deserializeEntity(String entityData, World world) {
-        final JsonObject object = JsonSerialization.DEFAULT_GSON.fromJson(entityData, JsonObject.class);
+        final JsonObject object = JsonSerialization.decodeKeys(JsonSerialization.DEFAULT_GSON.fromJson(entityData, JsonObject.class));
         final Entity entity = JsonEntitySerializer.deserializeEntityFromJson(object, world);
 
         if (entity instanceof LivingEntity livingEntity && livingEntity.getHealth() <= 0) {

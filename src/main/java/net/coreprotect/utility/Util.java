@@ -1,5 +1,6 @@
 package net.coreprotect.utility;
 
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import org.bukkit.Location;
@@ -22,5 +23,10 @@ public class Util extends Queue {
 
     public static void sendBlockChange(Player player, Location location, BlockData blockData) {
         player.sendBlockChange(location, blockData);
+    }
+
+    public static <T> T make(T value, Consumer<T> initializer) {
+        initializer.accept(value);
+        return value;
     }
 }
