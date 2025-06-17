@@ -12,6 +12,7 @@ import org.bukkit.attribute.Attributable;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.AbstractHorse;
@@ -73,18 +74,25 @@ public class EntityUtil {
 
     @Deprecated
     public static void spawnEntity(final BlockState block, final EntityType type, final List<Object> list) {
-        if (type == null) {
-            return;
-        }
         Scheduler.runTask(CoreProtect.getInstance(), () -> {
+            spawnEntity(block.getLocation(), type, list);
+        }, block.getLocation());
+    }
+
+    public static Entity spawnEntity(Location loc, EntityType type, List<Object> list) {
+        if (type == null) {
+            return null;
+        }
+        final Block block = loc.getBlock();
+        final Location location = block.getLocation();
+        //Scheduler.runTask(CoreProtect.getInstance(), () -> {
             try {
-                Location location = block.getLocation();
                 location.setX(location.getX() + 0.50);
                 location.setZ(location.getZ() + 0.50);
-                Entity entity = block.getLocation().getWorld().spawnEntity(location, type);
+                Entity entity = location.getWorld().spawnEntity(location, type);
 
                 if (list.isEmpty()) {
-                    return;
+                    return entity;
                 }
 
                 @SuppressWarnings("unchecked")
@@ -597,11 +605,13 @@ public class EntityUtil {
                     }
                     count++;
                 }
+                return entity;
             }
             catch (Exception e) {
-                e.printStackTrace();
+                CoreProtect.getInstance().getSLF4JLogger().error("Failed to deserialize entity data for entity at '{}' with type '{}'", location, type.getKey().asMinimalString(), e);
             }
-        }, block.getLocation());
+        //}, block.getLocation());
+        return null;
     }
 
 }

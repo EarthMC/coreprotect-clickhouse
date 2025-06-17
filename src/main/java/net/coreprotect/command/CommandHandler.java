@@ -74,6 +74,8 @@ public class CommandHandler implements CommandExecutor {
                     }
                     else if (user.hasPermission("coreprotect.networking") && corecommand.equals("network-debug")) {
                         permission = true;
+                    } else if (corecommand.equals("convert") && user.hasPermission("coreprotect.convert-clickhouse")) {
+                        permission = true;
                     }
                 }
 
@@ -126,6 +128,9 @@ public class CommandHandler implements CommandExecutor {
                     else {
                         Extensions.runDatabaseMigration(corecommand, user, argumentArray);
                     }
+                }
+                else if (corecommand.equals("convert")) {
+                    ConvertCommand.runCommand(user, permission, argumentArray);
                 }
                 else {
                     Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.COMMAND_NOT_FOUND, Color.WHITE, "/co " + corecommand));

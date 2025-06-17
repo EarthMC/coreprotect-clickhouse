@@ -208,6 +208,7 @@ public class ConfigHandler extends Queue {
         }
         else {
             Configurator.setLevel("com.clickhouse.jdbc.ClickHouseDriver", Level.OFF); // disable "v2 driver" spam
+            Configurator.setLevel("com.clickhouse.client.api.Client", Level.OFF); // stop logging debug messages at info
 
             HikariConfig config = new HikariConfig();
             config.setDriverClassName("com.clickhouse.jdbc.ClickHouseDriver");

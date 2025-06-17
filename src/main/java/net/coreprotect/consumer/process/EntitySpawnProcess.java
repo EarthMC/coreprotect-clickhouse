@@ -29,6 +29,8 @@ class EntitySpawnProcess {
 
                 try (final ResultSet rs = ps.executeQuery()) {
                     if (!rs.next()) {
+                        Scheduler.runTask(CoreProtect.getInstance(), () -> block.getWorld().spawnEntity(block.getLocation().add(0.5D, 0.0D, 0.5D), type), block.getLocation());
+
                         return;
                     }
 

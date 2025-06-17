@@ -277,7 +277,7 @@ public class RollbackUtil extends Lookup {
     @SuppressWarnings("unchecked")
     @Deprecated
     public static Object[] populateItemStack(ItemStack itemstack, Object list) {
-        int slot = 0;
+        int slot = -1;
         String faceData = "";
 
         try {
@@ -477,13 +477,8 @@ public class RollbackUtil extends Lookup {
 
     public static Object[] populateItemStack(ItemStack itemstack, byte[] metadata) {
         if (metadata != null) {
-            try {
-                ByteArrayInputStream metaByteStream = new ByteArrayInputStream(metadata);
-                BukkitObjectInputStream metaObjectStream = new BukkitObjectInputStream(metaByteStream);
-                Object metaList = metaObjectStream.readObject();
-                metaObjectStream.close();
-                metaByteStream.close();
-
+            try (BukkitObjectInputStream bIn = new BukkitObjectInputStream(new ByteArrayInputStream(metadata))) {
+                Object metaList = bIn.readObject();
                 return populateItemStack(itemstack, metaList);
             }
             catch (Exception e) {
@@ -491,7 +486,7 @@ public class RollbackUtil extends Lookup {
             }
         }
 
-        return new Object[] { 0, "", itemstack };
+        return new Object[] { -1, "", itemstack };
     }
 
     /**

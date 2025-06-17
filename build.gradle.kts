@@ -24,7 +24,7 @@ dependencies {
     implementation("com.github.oshi:oshi-core:6.6.2")
     implementation("org.apache.logging.log4j:log4j-core:2.19.0")
     implementation("org.apache.logging.log4j:log4j-api:2.19.0")
-    implementation("com.clickhouse:clickhouse-jdbc:0.8.6")
+    implementation("com.clickhouse:clickhouse-jdbc:0.8.5")
 
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Core")
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit") {

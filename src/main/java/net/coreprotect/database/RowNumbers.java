@@ -89,6 +89,16 @@ public class RowNumbers {
         }
     }
 
+    public void set(Map<String, Long> tableCounts) {
+        synchronized (this.initializationLock) {
+            this.counters.clear();
+
+            for (final Map.Entry<String, Long> count : tableCounts.entrySet()) {
+                this.counters.put(count.getKey(), new AtomicLong(count.getValue()));
+            }
+        }
+    }
+
     public void save() {
         try {
             Files.writeString(this.file, new Gson().toJson(counters, new TypeToken<Map<String, AtomicLong>>(){}.getType()), StandardCharsets.UTF_8, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
