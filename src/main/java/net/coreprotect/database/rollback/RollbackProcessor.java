@@ -24,7 +24,6 @@ import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 
 import net.coreprotect.bukkit.BukkitAdapter;
 import net.coreprotect.config.Config;
@@ -309,10 +308,7 @@ public class RollbackProcessor {
 
                         int action = rollbackType == 0 ? (inventoryAction ^ 1) : inventoryAction;
 
-                        SerializedItem item = SerializedItem.of(ItemStack.of(rowType, rowAmount));
-                        if (rowMetadata != null) {
-                            item = ItemUtils.deserializeItem(rowMetadata);
-                        }
+                        SerializedItem item = ItemUtils.deserializeItem(rowMetadata, rowType, rowAmount);
 
                         if (rowAction == ItemLogger.ITEM_REMOVE_ENDER || rowAction == ItemLogger.ITEM_ADD_ENDER) {
                             RollbackUtil.modifyContainerItems(containerType, player.getEnderChest(), item.slot(), item.itemStack().clone(), action ^ 1);
@@ -337,10 +333,7 @@ public class RollbackProcessor {
                     }
 
                     if ((rollbackType == 0 && rowRolledBack == 0) || (rollbackType == 1 && rowRolledBack == 1)) {
-                        SerializedItem item = SerializedItem.of(new ItemStack(rowType, rowAmount));
-                        if (rowMetadata != null) {
-                            item = ItemUtils.deserializeItem(rowMetadata);
-                        }
+                        SerializedItem item = ItemUtils.deserializeItem(rowMetadata, rowType, rowAmount);
 
                         BlockFace faceData = item.faceData();
 

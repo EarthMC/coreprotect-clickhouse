@@ -504,7 +504,7 @@ public class ItemUtils {
     public static SerializedItem deserializeItem(@Nullable String itemString, @Nullable Material type, int amount) {
         if (itemString == null || itemString.isEmpty() || "0".equals(itemString)) {
             if (type != null) {
-                return SerializedItem.of(ItemStack.of(type, amount));
+                return SerializedItem.of(ItemStack.of(type, Math.min(amount, 99)));
             } else {
                 return null;
             }

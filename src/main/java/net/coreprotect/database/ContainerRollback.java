@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import net.coreprotect.utility.serialize.SerializedItem;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -104,7 +105,7 @@ public class ContainerRollback extends Rollback {
                                 int rowRolledBack = MaterialUtils.rolledBack((Integer) lookupRow[9], false);
                                 // int rowWid = (Integer)lookupRow[10];
                                 int rowAmount = (Integer) lookupRow[11];
-                                byte[] rowMetadata = (byte[]) lookupRow[12];
+                                String rowMetadata = (String) lookupRow[12];
                                 Material rowType = MaterialUtils.getType(rowTypeRaw);
 
                                 if ((rollbackType == 0 && rowRolledBack == 0) || (rollbackType == 1 && rowRolledBack == 1)) {
@@ -119,18 +120,16 @@ public class ContainerRollback extends Rollback {
                                         action = 1;
                                     }
 
-                                    ItemStack itemstack = new ItemStack(rowType, rowAmount);
-                                    Object[] populatedStack = Rollback.populateItemStack(itemstack, rowMetadata);
-                                    int slot = (Integer) populatedStack[0];
-                                    String faceData = (String) populatedStack[1];
-                                    itemstack = (ItemStack) populatedStack[2];
+                                    SerializedItem populatedStack = ItemUtils.deserializeItem(rowMetadata, rowType, rowAmount);
+                                    Integer slot = populatedStack.slot();
+                                    BlockFace faceData = populatedStack.faceData();
+                                    ItemStack itemstack = populatedStack.itemStack();
 
-                                    if (type == Material.ITEM_FRAME && faceData.length() > 0) {
-                                        BlockFace blockFace = BlockFace.valueOf(faceData);
+                                    if (type == Material.ITEM_FRAME && faceData != null) {
                                         ItemFrame itemFrame = (ItemFrame) container;
-                                        if (blockFace != itemFrame.getFacing()) {
+                                        if (faceData != itemFrame.getFacing()) {
                                             for (ItemFrame frame : matchingFrames) {
-                                                if (blockFace == frame.getFacing()) {
+                                                if (faceData == frame.getFacing()) {
                                                     container = frame;
                                                     break;
                                                 }
@@ -138,7 +137,7 @@ public class ContainerRollback extends Rollback {
                                         }
                                     }
 
-                                    Rollback.modifyContainerItems(type, container, slot, itemstack, action);
+                                    Rollback.modifyContainerItems(type, container, slot != null ? slot : 0, itemstack, action);
                                 }
                             }
                         }
