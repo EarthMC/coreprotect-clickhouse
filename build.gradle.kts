@@ -20,10 +20,7 @@ dependencies {
     }
 
     implementation(platform("com.intellectualsites.bom:bom-newest:1.45"))
-    implementation("org.bstats:bstats-bukkit:3.0.2")
-    implementation("com.github.oshi:oshi-core:6.6.2")
-    implementation("org.apache.logging.log4j:log4j-core:2.19.0")
-    implementation("org.apache.logging.log4j:log4j-api:2.19.0")
+    implementation("org.bstats:bstats-bukkit:3.1.0")
     implementation("com.clickhouse:clickhouse-jdbc:0.8.5")
 
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Core")
@@ -32,17 +29,10 @@ dependencies {
     }
     compileOnly("com.github.DeadSilenceIV:AdvancedChestsAPI:3.2-BETA")
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.1")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.10.1")
+    testImplementation(platform("org.junit:junit-bom:5.13.1"))
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.1")
-    testImplementation("org.mockito:mockito-core:5.16.1")
-    testImplementation("org.mockito:mockito-junit-jupiter:5.16.1")
-    testImplementation("com.github.seeseemelk:MockBukkit-v1.21:3.133.2")
-    testImplementation("org.xerial:sqlite-jdbc:3.45.1.0")
-    testImplementation("org.slf4j:slf4j-simple:2.0.12")
-    testImplementation("net.bytebuddy:byte-buddy:1.16.1")
-    testImplementation("net.bytebuddy:byte-buddy-agent:1.16.1")
 }
 
 java.sourceCompatibility = JavaVersion.VERSION_21
@@ -59,16 +49,16 @@ tasks {
     shadowJar {
         archiveClassifier.set("")
 
-        relocate("org.bstats", "net.coreprotect")
-        relocate("com.zaxxer", "net.coreprotect")
+        relocate("org.bstats", "net.coreprotect.libs.bstats")
+        relocate("com.zaxxer.hikari", "net.coreprotect.libs.hikaricp")
+        relocate("com.clickhouse", "net.coreprotect.libs.clickhouse")
 
         dependencies {
             exclude(dependency("com.google.code.gson:.*"))
             exclude(dependency("org.intellij:.*"))
             exclude(dependency("org.jetbrains:.*"))
-            exclude(dependency("org.slf4j:.*"))
-            exclude(dependency("org.apache.logging.log4j:.*"))
             exclude(dependency("net.java.dev.jna:.*"))
+            exclude(dependency("org.jspecify:.*"))
         }
     }
 

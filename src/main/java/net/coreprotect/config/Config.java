@@ -399,9 +399,6 @@ public class Config extends Language {
                     parseConfig(data);
                 }
                 catch (final Throwable thr) {
-                    if (thr instanceof ThreadDeath) {
-                        throw (ThreadDeath) thr;
-                    }
                     complete.completeExceptionally(thr);
                     return;
                 }

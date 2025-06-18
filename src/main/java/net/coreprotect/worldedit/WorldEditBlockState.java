@@ -12,15 +12,15 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Entity;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.material.MaterialData;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.plugin.Plugin;
 
+@SuppressWarnings("removal")
 public final class WorldEditBlockState implements BlockState {
 
-    protected Location location;
-    protected Material material;
-    protected BlockData blockData;
+    private final Location location;
+    private Material material;
+    private BlockData blockData;
 
     public WorldEditBlockState(Location loc) {
         location = loc;
@@ -58,7 +58,7 @@ public final class WorldEditBlockState implements BlockState {
     }
 
     @Override
-    public MaterialData getData() {
+    public org.bukkit.material.MaterialData getData() {
         return null;
     }
 
@@ -122,7 +122,7 @@ public final class WorldEditBlockState implements BlockState {
     }
 
     @Override
-    public void setData(MaterialData data) {
+    public void setData(org.bukkit.material.MaterialData data) {
 
     }
 

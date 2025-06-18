@@ -163,11 +163,11 @@ public class BukkitAdapter implements BukkitInterface {
 
     @Override
     public ItemStack getArrowMeta(Arrow arrow, ItemStack itemStack) {
-        PotionData data = arrow.getBasePotionData();
-        if (data.getType() != PotionType.valueOf("UNCRAFTABLE")) {
+        PotionType potionType = arrow.getBasePotionType();
+        if (potionType != null) {
             itemStack = new ItemStack(Material.TIPPED_ARROW);
             PotionMeta meta = (PotionMeta) itemStack.getItemMeta();
-            meta.setBasePotionData(data);
+            meta.setBasePotionType(potionType);
             for (PotionEffect effect : arrow.getCustomEffects()) {
                 meta.addCustomEffect(effect, false);
             }
