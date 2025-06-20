@@ -23,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public class EntityConverter implements ConvertProcess {
     private final EntityTable table;
@@ -34,6 +35,8 @@ public class EntityConverter implements ConvertProcess {
     @SuppressWarnings({"deprecation", "unchecked"})
     @Override
     public void convertTable(ClickhouseConverter converter, Connection connection) {
+        CompletableFuture<Void> completionFuture = new CompletableFuture<>();
+
         Scheduler.runTask(CoreProtect.getInstance(), () -> {
             long batchCount = 0;
 
@@ -57,7 +60,7 @@ public class EntityConverter implements ConvertProcess {
                     try (BukkitObjectInputStream bIn = new BukkitObjectInputStream(new ByteArrayInputStream(data))) {
                         weirdData = (List<Object>) bIn.readObject();
                     } catch (IOException | ClassNotFoundException e) {
-                        converter.logger().error("failed to deserialize entity data via bukkit input stream at row {}", rowId);
+                        converter.logger().error("failed to deserialize entity data via bukkit input stream at row {}", rowId, e);
                         continue;
                     }
 
@@ -118,7 +121,14 @@ public class EntityConverter implements ConvertProcess {
                 insertStatement.executeBatch();
             } catch (SQLException e) {
                 converter.logger().error("An sql exception occurred while running entity converter", e);
+                completionFuture.completeExceptionally(e);
+            } finally {
+                if (!completionFuture.isCompletedExceptionally()) {
+                    completionFuture.complete(null);
+                }
             }
         });
+
+        completionFuture.join();
     }
 }

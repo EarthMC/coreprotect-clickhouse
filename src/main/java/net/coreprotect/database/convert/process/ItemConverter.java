@@ -50,7 +50,7 @@ public class ItemConverter implements ConvertProcess {
 
                 insertStatement.addBatch();
 
-                if (++batchCount % 10000 == 0) {
+                if (++batchCount % 50_000 == 0) {
                     insertStatement.executeBatch();
                 }
             }

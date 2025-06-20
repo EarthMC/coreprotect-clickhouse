@@ -44,7 +44,7 @@ public class ContainerConverter implements ConvertProcess {
 
                 insertStatement.addBatch();
 
-                if (++batchCount % 5000 == 0) {
+                if (++batchCount % 50_000 == 0) {
                     insertStatement.executeBatch();
                 }
             }
