@@ -22,12 +22,10 @@ public class SimpleConvertProcess implements ConvertProcess {
     }
 
     @Override
-    public void convertTable(ClickhouseConverter converter, Connection connection) throws SQLException {
+    public void convertTable(ClickhouseConverter converter, ConvertOptions options, Connection connection) throws SQLException {
         if (table.getColumnMapping().getMapping().isEmpty()) {
             throw new IllegalStateException("Cannot convert with an empty TableMapping.");
         }
-
-        // connection.createStatement().execute("TRUNCATE TABLE " + ConfigHandler.prefix + table.getName());
 
         final List<String> columns = new ArrayList<>();
         final List<String> values = new ArrayList<>();
@@ -38,7 +36,7 @@ public class SimpleConvertProcess implements ConvertProcess {
         }
 
         String query = "INSERT INTO " + ConfigHandler.prefix + table.getName() + " (" + String.join(", ", columns) + ")" +
-                "SELECT " + String.join(", ", values) + " FROM " + converter.formatMysqlSource(table) + ";";
+                "SELECT " + String.join(", ", values) + " FROM " + converter.formatMysqlSource(table) + " OFFSET " + options.offset() + ";";
 
         try (Statement statement = connection.createStatement()) {
             statement.execute(query);

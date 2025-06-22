@@ -13,7 +13,7 @@ public class SkullTable extends TableData {
 
     @Override
     public TableMapping getColumnMapping() {
-        return TableMapping.map().columns("rowid", "time", "user", "skin").finish();
+        return TableMapping.map().columns("rowid", "time", "owner", "skin").finish();
     }
 
     @Override

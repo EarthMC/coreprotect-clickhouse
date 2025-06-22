@@ -16,11 +16,11 @@ public class ContainerConverter implements ConvertProcess {
     }
 
     @Override
-    public void convertTable(ClickhouseConverter converter, Connection connection) throws SQLException {
+    public void convertTable(ClickhouseConverter converter, ConvertOptions options, Connection connection) throws SQLException {
         long batchCount = 0;
 
         try (PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO " + table.fullName() + " (rowid, time, user, wid, x, y, z, type, data, amount, metadata, action, rolled_back) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            PreparedStatement readStatement = connection.prepareStatement("SELECT rowid, time, user, wid, x, y, z, type, data, amount, hex(metadata), action, rolled_back FROM " + converter.formatMysqlSource(table))) {
+            PreparedStatement readStatement = connection.prepareStatement("SELECT rowid, time, user, wid, x, y, z, type, data, amount, hex(metadata), action, rolled_back FROM " + converter.formatMysqlSource(table) + " OFFSET " + options.offset())) {
 
             final ResultSet rs = readStatement.executeQuery();
             while (rs.next()) {

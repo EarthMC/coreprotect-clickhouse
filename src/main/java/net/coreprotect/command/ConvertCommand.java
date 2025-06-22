@@ -5,6 +5,7 @@ import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.database.Database;
 import net.coreprotect.database.convert.ClickhouseConverter;
 import net.coreprotect.database.convert.TableData;
+import net.coreprotect.database.convert.process.ConvertOptions;
 import net.coreprotect.thread.Scheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -16,6 +17,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -117,11 +119,6 @@ public class ConvertCommand {
                 });
             }
             default -> {
-                if (args.length != 1) {
-                    sender.sendMessage(Component.text("Usage: /co convert <table name>", NamedTextColor.RED));
-                    return;
-                }
-
                 final TableData table = converter.getTable(args[0]);
                 if (table == null) {
                     sender.sendMessage(Component.text("Could not find data for table with name " + args[0] + ".", NamedTextColor.RED));
@@ -135,11 +132,54 @@ public class ConvertCommand {
 
                 ConfigHandler.converterRunning = true;
 
+                boolean truncate = false;
+                long offset = 0L;
+
+                if (args.length > 1) {
+                    for (int i = 1; i < args.length; i++) {
+                        String arg = args[i].trim();
+
+                        if (arg.isEmpty()) {
+                            continue;
+                        }
+
+                        if (arg.equals("-t")) {
+                            truncate = true;
+                        } else if (arg.startsWith("o:") || arg.startsWith("offset:")) {
+                            String value = arg.split(":", 2)[1];
+                            try {
+                                offset = Long.parseLong(value);
+                            } catch (NumberFormatException e) {
+                                sender.sendMessage(Component.text("Failed to parse offset value '" + value + "' as a number.", NamedTextColor.RED));
+                                return;
+                            }
+                        } else {
+                            sender.sendMessage(Component.text("Unrecognized option: " + arg, NamedTextColor.RED));
+                            return;
+                        }
+                    }
+                }
+
+                final ConvertOptions options = new ConvertOptions(truncate, offset);
+
                 final Thread migrationThread = new Thread(() -> {
                     final long startTime = System.currentTimeMillis();
 
                     try (Connection connection = Database.getConnection(true, 10000)) {
-                        table.converter().convertTable(converter, connection);
+                        if (options.truncate()) {
+                            converter.logger().info("Truncating destination table {}...", table.fullName());
+
+                            try (Statement statement = connection.createStatement()) {
+                                statement.execute("TRUNCATE TABLE " + table.fullName());
+                                converter.logger().info("Truncated table {}.", table.fullName());
+                            } catch (SQLException e) {
+                                converter.logger().error("Failed to truncate table {}", table.fullName(), e);
+                            }
+                        }
+
+                        converter.logger().info("Started migrating {}...", table.fullName());
+
+                        table.converter().convertTable(converter, options, connection);
 
                         converter.logger().info("Finished converting {}, took {}.", table.fullName(), DurationFormatUtils.formatDurationHMS(System.currentTimeMillis() - startTime));
                     } catch (SQLException e) {
@@ -149,14 +189,14 @@ public class ConvertCommand {
                     ConfigHandler.converterRunning = false;
                 });
 
+                sender.sendMessage(Component.text("Started migrating table " + table.fullName() + ".", NamedTextColor.GREEN));
+
                 migrationThread.setName("CoreProtect ClickHouse Converter");
                 migrationThread.start();
                 migrationThread.setUncaughtExceptionHandler((thread, throwable) -> {
                     converter.logger().error("An exception occurred while running converter for {}", table.getName(), throwable);
                     ConfigHandler.converterRunning = false;
                 });
-
-                sender.sendMessage(Component.text("Started migrating table " + table.fullName() + ".", NamedTextColor.GREEN));
             }
         }
     }
