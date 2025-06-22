@@ -542,7 +542,6 @@ public class ItemUtils {
             return new SerializedItem(itemStack, slot, faceData);
         } catch (Exception e) {
             CoreProtect.getInstance().getSLF4JLogger().warn("Failed to deserialize item from json {}", object, e);
-            System.out.println(itemString);
             return type != null ? new SerializedItem(ItemStack.of(type, Math.min(amount, 99)), slot, faceData) : null;
         }
     }

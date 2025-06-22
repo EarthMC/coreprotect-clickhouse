@@ -49,26 +49,24 @@ public class UserStatement {
         int id = -1;
 
         try {
-            String where = "user = ?";
+            String where = "lower(user) = ?";
             if (uuid != null) {
                 where = where + " OR uuid = ?";
             }
 
-            String query = "SELECT rowid as id, uuid FROM " + ConfigHandler.prefix + "user WHERE " + where + " ORDER BY rowid ASC LIMIT 0, 1";
-            PreparedStatement preparedStmt = connection.prepareStatement(query);
-            preparedStmt.setString(1, user);
+            try (PreparedStatement preparedStmt = connection.prepareStatement("SELECT rowid as id, uuid FROM " + ConfigHandler.prefix + "user WHERE " + where + " ORDER BY rowid LIMIT 1")) {
+                preparedStmt.setString(1, user.toLowerCase(Locale.ROOT));
 
-            if (uuid != null) {
-                preparedStmt.setString(2, uuid);
-            }
+                if (uuid != null) {
+                    preparedStmt.setString(2, uuid);
+                }
 
-            ResultSet resultSet = preparedStmt.executeQuery();
-            while (resultSet.next()) {
-                id = resultSet.getInt("id");
-                uuid = resultSet.getString("uuid");
+                ResultSet resultSet = preparedStmt.executeQuery();
+                if (resultSet.next()) {
+                    id = resultSet.getInt("id");
+                    uuid = resultSet.getString("uuid");
+                }
             }
-            resultSet.close();
-            preparedStmt.close();
 
             if (id == -1) {
                 id = insert(connection, user);

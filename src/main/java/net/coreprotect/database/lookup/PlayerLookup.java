@@ -5,7 +5,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Locale;
 
-import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
 
 public class PlayerLookup {
@@ -19,23 +18,15 @@ public class PlayerLookup {
                 return true;
             }
 
-            String collate = "";
-            if (!Config.getGlobal().MYSQL) {
-                collate = " COLLATE NOCASE";
+            try (PreparedStatement preparedStmt = connection.prepareStatement("SELECT rowid as id, uuid FROM " + ConfigHandler.prefix + "user WHERE lower(user) = ? LIMIT 1")) {
+                preparedStmt.setString(1, user.toLowerCase(Locale.ROOT));
+
+                ResultSet results = preparedStmt.executeQuery();
+                if (results.next()) {
+                    id = results.getInt("id");
+                    uuid = results.getString("uuid");
+                }
             }
-
-            String query = "SELECT rowid as id, uuid FROM " + ConfigHandler.prefix + "user WHERE user = ?" + collate + " LIMIT 0, 1";
-            PreparedStatement preparedStmt = connection.prepareStatement(query);
-            preparedStmt.setString(1, user);
-
-            ResultSet results = preparedStmt.executeQuery();
-
-            while (results.next()) {
-                id = results.getInt("id");
-                uuid = results.getString("uuid");
-            }
-            results.close();
-            preparedStmt.close();
 
             if (id > -1) {
                 if (uuid != null) {
