@@ -20,12 +20,15 @@ import net.coreprotect.database.convert.table.UsernameLogTable;
 import net.coreprotect.database.convert.table.VersionTable;
 import net.coreprotect.database.convert.table.WorldTable;
 import net.coreprotect.utility.serialize.JsonSerialization;
+import org.apache.hc.core5.http.MalformedChunkCodingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -126,6 +129,23 @@ public class ClickhouseConverter {
             Files.writeString(this.credentialsPath, JsonSerialization.DEFAULT_GSON.toJson(new MySQLLoginInformation(this.mysqlAddress, this.mysqlDatabase, this.mysqlUser, this.mysqlPassword)));
         } catch (IOException e) {
             LOGGER.warn("Failed to write mysql credentials to disk", e);
+        }
+    }
+
+    public boolean next(ResultSet resultSet) throws SQLException {
+        try {
+            return resultSet.next();
+        } catch (SQLException e) {
+            Throwable cause = e;
+
+            while ((cause = cause.getCause()) != null) {
+                if (cause instanceof MalformedChunkCodingException) {
+                    LOGGER.error("Skipping corrupt row...");
+                    return next(resultSet);
+                }
+            }
+
+            return false;
         }
     }
 

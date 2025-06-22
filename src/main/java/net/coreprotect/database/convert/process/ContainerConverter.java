@@ -23,7 +23,7 @@ public class ContainerConverter implements ConvertProcess {
             PreparedStatement readStatement = connection.prepareStatement("SELECT rowid, time, user, wid, x, y, z, type, data, amount, hex(metadata), action, rolled_back FROM " + converter.formatMysqlSource(table) + " OFFSET " + options.offset())) {
 
             final ResultSet rs = readStatement.executeQuery();
-            while (rs.next()) {
+            while (converter.next(rs)) {
                 final int rowId = rs.getInt(1);
                 insertStatement.setInt(1, rowId); // rowid
                 insertStatement.setInt(2, rs.getInt(2)); // time

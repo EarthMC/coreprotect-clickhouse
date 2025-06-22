@@ -61,6 +61,7 @@ public class ConvertCommand {
                 sender.sendMessage(Component.text("Failed to connect to the mysql database using the provided credentials.", NamedTextColor.RED));
                 converter.logger().error("Failed to connect to the mysql database using the provided credentials.", e);
             }
+            return;
         }
 
         switch (args[0].toLowerCase(Locale.ROOT)) {
@@ -98,7 +99,8 @@ public class ConvertCommand {
                         Map<String, Long> counts = new HashMap<>();
 
                         for (final TableData table : converter.getTables().values()) {
-                            try (PreparedStatement ps = connection.prepareStatement("select count(1) from " + converter.formatMysqlSource(table))) {
+                            converter.logger().info("Querying row count for table {}...", table.fullName());
+                            try (PreparedStatement ps = connection.prepareStatement("SELECT MAX(rowid) FROM " + converter.formatMysqlSource(table))) {
                                 final ResultSet rs = ps.executeQuery();
 
                                 if (rs.next()) {

@@ -40,7 +40,7 @@ public class BlockConverter implements ConvertProcess {
             PreparedStatement readStatement = connection.prepareStatement("SELECT rowid, time, user, wid, x, y, z, type, data, hex(meta), toString(blockdata), action, rolled_back FROM " + converter.formatMysqlSource(table) + " OFFSET " + options.offset())) {
 
             ResultSet rs = readStatement.executeQuery();
-            while (rs.next()) {
+            while (converter.next(rs)) {
                 insertStatement.setLong(1, rs.getLong(1)); // rowid
                 insertStatement.setInt(2, rs.getInt(2)); // time
                 insertStatement.setInt(3, rs.getInt(3)); // user
