@@ -385,7 +385,12 @@ public class ItemUtils {
             return "";
         }
 
-        ItemStack item = deserializeItem(itemData, MaterialUtils.getType(type), amount).itemStack();
+        final SerializedItem serializedItem = deserializeItem(itemData, MaterialUtils.getType(type), amount);
+        if (serializedItem == null || serializedItem.itemStack() == null) {
+            return "";
+        }
+
+        final ItemStack item = serializedItem.itemStack();
         String displayName = item.hasItemMeta() && item.getItemMeta().hasDisplayName() ? item.getItemMeta().getDisplayName() : "";
         StringBuilder message = new StringBuilder(Color.ITALIC + displayName + Color.GREY);
 
@@ -502,7 +507,7 @@ public class ItemUtils {
 
     @SuppressWarnings("deprecation")
     public static SerializedItem deserializeItem(@Nullable String itemString, @Nullable Material type, int amount) {
-        if (itemString == null || itemString.isEmpty() || "0".equals(itemString)) {
+        if (itemString == null || itemString.isEmpty() || "{}".equals(itemString) || "0".equals(itemString)) {
             if (type != null) {
                 return SerializedItem.of(ItemStack.of(type, Math.min(amount, 99)));
             } else {
@@ -515,7 +520,7 @@ public class ItemUtils {
             object = JsonSerialization.DEFAULT_GSON.fromJson(itemString, JsonObject.class);
         } catch (JsonSyntaxException e) {
             CoreProtect.getInstance().getSLF4JLogger().warn("Failed to deserialize an item stack from {}", itemString, e);
-            return null;
+            return type != null ? SerializedItem.of(ItemStack.of(type, Math.min(amount, 99))) : null;
         }
 
         Integer slot = null;
@@ -531,9 +536,15 @@ public class ItemUtils {
             } catch (IllegalArgumentException ignored) {}
         }
 
-        final ItemStack itemStack = Bukkit.getUnsafe().deserializeItemFromJson(object);
+        try {
+            final ItemStack itemStack = Bukkit.getUnsafe().deserializeItemFromJson(object);
 
-        return new SerializedItem(itemStack, slot, faceData);
+            return new SerializedItem(itemStack, slot, faceData);
+        } catch (Exception e) {
+            CoreProtect.getInstance().getSLF4JLogger().warn("Failed to deserialize item from json {}", object, e);
+            System.out.println(itemString);
+            return type != null ? new SerializedItem(ItemStack.of(type, Math.min(amount, 99)), slot, faceData) : null;
+        }
     }
 
     public static BlockFace parseBlockFaceOrNull(@Nullable String blockFace) {

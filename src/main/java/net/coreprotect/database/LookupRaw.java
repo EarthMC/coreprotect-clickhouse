@@ -549,7 +549,7 @@ public class LookupRaw extends Queue {
 
             if (actionList.contains(4) || actionList.contains(5)) {
                 queryTable = "container";
-                rows = "rowid as id,time,user,wid,x,y,z,action,type,toString(data) as data,rolled_back,amount,metadata";
+                rows = "rowid as id,time,user,wid,x,y,z,action,type,toString(data) as data,rolled_back,amount,toString(metadata) as metadata";
             }
             else if (actionList.contains(6) || actionList.contains(7)) {
                 queryTable = "chat";
