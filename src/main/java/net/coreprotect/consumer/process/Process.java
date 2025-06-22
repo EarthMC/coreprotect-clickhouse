@@ -69,6 +69,15 @@ public class Process {
     }
 
     protected static void processConsumer(int processId, boolean lastRun) {
+        if (ConfigHandler.READ_ONLY) {
+            Consumer.consumer.get(processId).clear();
+            Consumer.consumerUsers.get(processId).clear();
+            Consumer.consumerObjects.get(processId).clear();
+            Consumer.consumer_id.put(processId, new Integer[] { 0, 0 });
+
+            return;
+        }
+
         try (Connection connection = Database.getConnection(false, 500)) {
             if (connection == null) {
                 return;

@@ -60,6 +60,7 @@ public class ConfigHandler extends Queue {
     public static String prefix = "co_";
     public static String prefixConfig = "co_";
     public static int maximumPoolSize = 10;
+    public static final boolean READ_ONLY = Boolean.getBoolean("net.earthmc.coreprotect-clickhouse.database.read-only");
 
     public static HikariDataSource hikariDataSource = null;
     public static final CentralProcessor processorInfo = SystemUtils.getProcessorInfo();
