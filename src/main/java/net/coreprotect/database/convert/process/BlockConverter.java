@@ -40,7 +40,7 @@ public class BlockConverter implements ConvertProcess {
             PreparedStatement readStatement = connection.prepareStatement("SELECT rowid, time, user, wid, x, y, z, type, data, hex(meta), toString(blockdata), action, rolled_back FROM " + converter.formatMysqlSource(table) + " OFFSET " + options.offset())) {
 
             ResultSet rs = readStatement.executeQuery();
-            while (converter.next(rs)) {
+            while (converter.next(rs, insertStatement, batchCount)) {
                 insertStatement.setLong(1, rs.getLong(1)); // rowid
                 insertStatement.setInt(2, rs.getInt(2)); // time
                 insertStatement.setInt(3, rs.getInt(3)); // user
@@ -57,54 +57,57 @@ public class BlockConverter implements ConvertProcess {
                 String meta = null;
                 byte[] data = Bytes.fromHexString(rs.getString(10));
                 if (data != null) {
-                    final Material type = MaterialUtils.getType(rawBlockType);
+                    try {
+                        final Material type = MaterialUtils.getType(rawBlockType);
 
-                    final List<Object> rawMeta = RollbackUtil.deserializeMetadata(data);
+                        final List<Object> rawMeta = RollbackUtil.deserializeMetadata(data);
 
-                    String command = null;
-                    Collection<SerializedItem> items = null;
-                    BannerData bannerData = null;
+                        String command = null;
+                        Collection<SerializedItem> items = null;
+                        BannerData bannerData = null;
 
-                    if (Tag.SHULKER_BOXES.isTagged(type)) {
-                        for (final Object object : rawMeta) {
-                            final ItemStack itemStack = ItemUtils.unserializeItemStackLegacy(object);
-                            if (itemStack != null) {
-                                if (items == null) {
-                                    items = new ArrayList<>();
+                        if (Tag.SHULKER_BOXES.isTagged(type)) {
+                            for (final Object object : rawMeta) {
+                                final ItemStack itemStack = ItemUtils.unserializeItemStackLegacy(object);
+                                if (itemStack != null) {
+                                    if (items == null) {
+                                        items = new ArrayList<>();
+                                    }
+
+                                    items.add(SerializedItem.of(itemStack));
                                 }
+                            }
+                        } else if (type == Material.COMMAND_BLOCK || type == Material.CHAIN_COMMAND_BLOCK || type == Material.REPEATING_COMMAND_BLOCK) {
+                            for (final Object object : rawMeta) {
+                                if (object instanceof String string) {
+                                    command = string;
+                                    break;
+                                }
+                            }
+                        } else if (Tag.BANNERS.isTagged(type)) {
+                            DyeColor baseColor = null;
+                            List<Pattern> patterns = new ArrayList<>();
 
-                                items.add(SerializedItem.of(itemStack));
+                            for (final Object value : rawMeta) {
+                                if (value instanceof DyeColor dyeColor) {
+                                    baseColor = dyeColor;
+                                } else if (value instanceof Map) {
+                                    @SuppressWarnings("unchecked")
+                                    Pattern pattern = new Pattern((Map<String, Object>) value);
+                                    patterns.add(pattern);
+                                }
+                            }
+
+                            if (baseColor != null) {
+                                bannerData = new BannerData(baseColor, patterns);
                             }
                         }
-                    } else if (type == Material.COMMAND_BLOCK || type == Material.CHAIN_COMMAND_BLOCK || type == Material.REPEATING_COMMAND_BLOCK) {
-                        for (final Object object : rawMeta) {
-                            if (object instanceof String string) {
-                                command = string;
-                                break;
-                            }
-                        }
-                    } else if (Tag.BANNERS.isTagged(type)) {
-                        DyeColor baseColor = null;
-                        List<Pattern> patterns = new ArrayList<>();
 
-                        for (final Object value : rawMeta) {
-                            if (value instanceof DyeColor dyeColor) {
-                                baseColor = dyeColor;
-                            }
-                            else if (value instanceof Map) {
-                                @SuppressWarnings("unchecked")
-                                Pattern pattern = new Pattern((Map<String, Object>) value);
-                                patterns.add(pattern);
-                            }
+                        if (command != null || items != null || bannerData != null) {
+                            meta = JsonSerialization.GSON.toJson(new SerializedBlockMeta(command, items, bannerData));
                         }
-
-                        if (baseColor != null) {
-                            bannerData = new BannerData(baseColor, patterns);
-                        }
-                    }
-
-                    if (command != null || items != null || bannerData != null) {
-                        meta = JsonSerialization.GSON.toJson(new SerializedBlockMeta(command, items, bannerData));
+                    } catch (Exception e) {
+                        converter.logger().warn("Failed to convert block metadata at row {}", rs.getLong(1), e);
                     }
                 }
 

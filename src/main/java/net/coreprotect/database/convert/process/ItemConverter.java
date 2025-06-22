@@ -30,7 +30,7 @@ public class ItemConverter implements ConvertProcess {
             PreparedStatement readStatement = connection.prepareStatement("SELECT rowid, time, user, wid, x, y, z, type, hex(data), amount, action, rolled_back FROM " + converter.formatMysqlSource(table) + " OFFSET " + options.offset())) {
 
             final ResultSet rs = readStatement.executeQuery();
-            while (converter.next(rs)) {
+            while (converter.next(rs, insertStatement, batchCount)) {
                 final int rowId = rs.getInt(1);
                 insertStatement.setInt(1, rowId); // rowid
                 insertStatement.setInt(2, rs.getInt(2)); // time
@@ -60,27 +60,32 @@ public class ItemConverter implements ConvertProcess {
     }
 
     public static String convertItemHexToJson(ClickhouseConverter converter, int rowId, String hexData, int type, int amount) {
-        final byte[] bytes = Bytes.fromHexString(hexData);
-        if (bytes == null) {
+        try {
+            final byte[] bytes = Bytes.fromHexString(hexData);
+            if (bytes == null) {
+                return null;
+            }
+
+            final Material material = MaterialUtils.getType(type);
+            if (!material.isItem()) {
+                converter.logger().warn("Could not convert item at row id {} because material with id {} is not an item (got {})", rowId, type, material.getKey().asMinimalString());
+                return null;
+            }
+
+            Object[] deserialized = RollbackUtil.populateItemStack(ItemStack.of(material, Math.min(amount, 99)), bytes);
+
+            int slot = (int) deserialized[0];
+            BlockFace face = ItemUtils.parseBlockFaceOrNull((String) deserialized[1]);
+            ItemStack itemStack = (ItemStack) deserialized[2];
+
+            if (face == null && !ItemUtils.hasNonTrivialData(itemStack)) {
+                return null;
+            }
+
+            return ItemUtils.serializeItem(itemStack, slot, face);
+        } catch (Exception e) {
+            converter.logger().warn("Failed to convert item at row id {} to json", rowId, e);
             return null;
         }
-
-        final Material material = MaterialUtils.getType(type);
-        if (!material.isItem()) {
-            converter.logger().warn("Could not convert item at row id {} because material with id {} is not an item (got {})", rowId, type, material.getKey().asMinimalString());
-            return null;
-        }
-
-        Object[] deserialized = RollbackUtil.populateItemStack(ItemStack.of(material, Math.min(amount, 99)), bytes);
-
-        int slot = (int) deserialized[0];
-        BlockFace face = ItemUtils.parseBlockFaceOrNull((String) deserialized[1]);
-        ItemStack itemStack = (ItemStack) deserialized[2];
-
-        if (face == null && !ItemUtils.hasNonTrivialData(itemStack)) {
-            return null;
-        }
-
-        return ItemUtils.serializeItem(itemStack, slot, face);
     }
 }

@@ -2,6 +2,7 @@ package net.coreprotect.database.convert;
 
 import com.google.gson.JsonSyntaxException;
 import net.coreprotect.CoreProtect;
+import net.coreprotect.database.convert.process.CorruptResultRowException;
 import net.coreprotect.database.convert.table.ArtTable;
 import net.coreprotect.database.convert.table.BlockDataTable;
 import net.coreprotect.database.convert.table.BlockTable;
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -132,7 +134,7 @@ public class ClickhouseConverter {
         }
     }
 
-    public boolean next(ResultSet resultSet) throws SQLException {
+    public boolean next(ResultSet resultSet, PreparedStatement batchStatement, long rowCount) throws SQLException {
         try {
             return resultSet.next();
         } catch (SQLException e) {
@@ -140,12 +142,17 @@ public class ClickhouseConverter {
 
             while ((cause = cause.getCause()) != null) {
                 if (cause instanceof MalformedChunkCodingException) {
-                    LOGGER.error("Skipping corrupt row...");
-                    return next(resultSet);
+                    try {
+                        batchStatement.executeBatch();
+                    } catch (SQLException e2) {
+                        LOGGER.warn("Failed to commit batch statement", e2);
+                    }
+
+                    throw new CorruptResultRowException(rowCount);
                 }
             }
 
-            return false;
+            throw e;
         }
     }
 

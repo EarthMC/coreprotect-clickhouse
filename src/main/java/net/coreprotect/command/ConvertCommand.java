@@ -6,6 +6,7 @@ import net.coreprotect.database.Database;
 import net.coreprotect.database.convert.ClickhouseConverter;
 import net.coreprotect.database.convert.TableData;
 import net.coreprotect.database.convert.process.ConvertOptions;
+import net.coreprotect.database.convert.process.CorruptResultRowException;
 import net.coreprotect.thread.Scheduler;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -181,7 +182,26 @@ public class ConvertCommand {
 
                         converter.logger().info("Started migrating {}...", table.fullName());
 
-                        table.converter().convertTable(converter, options, connection);
+                        try {
+                            table.converter().convertTable(converter, options, connection);
+                        } catch (CorruptResultRowException e) {
+                            converter.logger().error("Encountered a corrupt row in resultset at offset {}, attempting self healing.", e.getRowNumber());
+
+                            int retryCount = 0;
+                            long newOffset = options.offset() + e.getRowNumber();
+                            boolean finished = false;
+
+                            while (retryCount <= 999 && !finished) {
+                                try {
+                                    table.converter().convertTable(converter, new ConvertOptions(false, newOffset), connection);
+                                    finished = true;
+                                } catch (CorruptResultRowException e2) {
+                                    retryCount++;
+                                    newOffset += e2.getRowNumber();
+                                    converter.logger().error("Encountered another corrupt row at offset {}, re-attempting (remaining attempts: {})", newOffset, 10 - retryCount);
+                                }
+                            }
+                        }
 
                         converter.logger().info("Finished converting {}, took {}.", table.fullName(), DurationFormatUtils.formatDurationHMS(System.currentTimeMillis() - startTime));
                     } catch (SQLException e) {
