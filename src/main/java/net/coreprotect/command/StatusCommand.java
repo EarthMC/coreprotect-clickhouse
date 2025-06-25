@@ -146,7 +146,7 @@ public class StatusCommand {
                         Chat.sendMessage(player, Color.DARK_AQUA + Phrase.build(Phrase.STATUS_SYSTEM, Color.WHITE, systemInformation));
                     }
                     catch (Exception e) {
-                        e.printStackTrace();
+                        // e.printStackTrace(); // CH - don't print stacktrace here
                     }
 
                     // Functions.sendMessage(player, Color.DARK_AQUA + "Website: " + Color.WHITE + "www.coreprotect.net/updates/");
