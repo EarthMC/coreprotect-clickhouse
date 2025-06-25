@@ -49,23 +49,24 @@ This functionality may be replaced in the future by randomly generated snowflake
 ## 4. Table migration order
 
 ### Required Tables
-The following tables are required to be migrated first. Once these tables are migrated, you could already disable the read-only flag and re-open the server for players while the rest of the migrations
-happen in the background.
+The following tables are required to be migrated first. It's important to restart your server once these are imported, so that the different item/entity mappings can be applied.
+
+Once these tables are migrated, you could already disable the read-only flag and re-open the server for players while the rest of the migrations happen in the background.
 
 ```
 co convert blockdata_map -t
 co convert material_map -t
-co_convert entity_map -t
+co convert entity_map -t
 co convert art_map -t
 co convert world -t
-co convert user
-co convert username_log
+co convert user -t
+co convert username_log -t
 ```
 
 ### Secondary Tables
 
 ```
-co convert version
+co convert version -t
 co convert chat
 co convert command
 co convert session
