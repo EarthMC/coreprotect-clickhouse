@@ -101,12 +101,12 @@ public class ConvertCommand {
 
                         for (final TableData table : converter.getTables().values()) {
                             converter.logger().info("Querying row count for table {}...", table.fullName());
-                            try (PreparedStatement ps = connection.prepareStatement("SELECT MAX(rowid) FROM " + converter.formatMysqlSource(table))) {
+                            try (PreparedStatement ps = connection.prepareStatement("SELECT AUTO_INCREMENT FROM mysql('" + converter.mysqlAddress() + "', 'information_schema', 'TABLES', '" + converter.mysqlUser() + "', '" + converter.mysqlPassword() + "') WHERE TABLE_SCHEMA = '" + converter.mysqlDatabase() + "' AND TABLE_NAME = '" + table.fullName() + "'")) {
                                 final ResultSet rs = ps.executeQuery();
 
                                 if (rs.next()) {
-                                    counts.put(table.getName(), rs.getLong(1) + 1);
-                                    converter.logger().info("Max row number from table {}: {}", table.fullName(), rs.getLong(1) + 1);
+                                    counts.put(table.getName(), rs.getLong(1));
+                                    converter.logger().info("Max row number from table {}: {}", table.fullName(), rs.getLong(1));
                                 } else {
                                     converter.logger().error("Could not query row count for table {}", table.fullName());
                                 }

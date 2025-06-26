@@ -11,7 +11,7 @@ This guide walks you through importing an existing CoreProtect database in MySQL
 Before doing anything, it's recommended to add the following system property to your server:
 
 ```
--net.earthmc.coreprotect-clickhouse.database.read-only=true
+-Dnet.earthmc.coreprotect-clickhouse.database.read-only=true
 ```
 
 This flag prevents new data from being written to the database during the setup and conversion process that would otherwise cause inconsistencies..
