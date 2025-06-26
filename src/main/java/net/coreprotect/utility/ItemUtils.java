@@ -488,6 +488,10 @@ public class ItemUtils {
 
     @SuppressWarnings("deprecation")
     public static String serializeItem(@NonNull ItemStack itemStack, int slot, BlockFace faceData) {
+        if (itemStack.getAmount() > 99) {
+            itemStack.setAmount(99);
+        }
+
         final JsonObject object = Bukkit.getUnsafe().serializeItemAsJson(itemStack);
 
         if (slot >= 0) {
