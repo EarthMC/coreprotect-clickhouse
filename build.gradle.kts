@@ -14,15 +14,15 @@ repositories {
 }
 
 dependencies {
-    paperweight.paperDevBundle(libs.paper.get().version)
+    paperweight.paperDevBundle("${libs.versions.minecraft.get()}-R0.1-SNAPSHOT")
     implementation(libs.hikaricp) {
         exclude(group = "org.slf4j")
     }
 
-    implementation(platform("com.intellectualsites.bom:bom-newest:1.45"))
-    implementation("org.bstats:bstats-bukkit:3.1.0")
-    implementation("com.clickhouse:clickhouse-jdbc:0.8.5")
+    implementation(libs.bstats)
+    implementation(libs.clickhouse.jdbc)
 
+    implementation(platform("com.intellectualsites.bom:bom-newest:1.45"))
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Core")
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit") {
         exclude(group = "*", module = "FastAsyncWorldEdit-Core")
@@ -43,11 +43,15 @@ tasks {
     }
 
     runServer {
-        minecraftVersion("1.21.4")
+        minecraftVersion(libs.versions.minecraft.get())
+    }
+
+    jar {
+        archiveClassifier.set(libs.versions.minecraft)
     }
 
     shadowJar {
-        archiveClassifier.set("")
+        archiveClassifier.set(libs.versions.minecraft)
 
         relocate("org.bstats", "net.coreprotect.libs.bstats")
         relocate("com.zaxxer.hikari", "net.coreprotect.libs.hikaricp")

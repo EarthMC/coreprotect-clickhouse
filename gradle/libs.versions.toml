@@ -1,7 +1,8 @@
 [versions]
+minecraft = "1.21.4"
 hikaricp = "6.3.0"
-paper = "1.21.4-R0.1-SNAPSHOT"
 
 [libraries]
-hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
-paper = { module = "io.papermc.paper:paper-api", version.ref = "paper" }
+hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikaricp" }
+clickhouse-jdbc = { group = "com.clickhouse", name = "clickhouse-jdbc", version = "0.8.5" }
+bstats = { group = "org.bstats", name = "bstats-bukkit", version = "3.1.0" }
