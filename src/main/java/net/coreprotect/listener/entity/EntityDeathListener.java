@@ -1,7 +1,6 @@
 package net.coreprotect.listener.entity;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -12,17 +11,19 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.AbstractArrow;
+import org.bukkit.entity.AbstractSkeleton;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Skeleton;
+import org.bukkit.entity.Projectile;
 import org.bukkit.entity.ThrownPotion;
 import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
@@ -81,75 +82,52 @@ public final class EntityDeathListener extends Queue implements Listener {
             return;
         }
 
-        boolean isCommand = (damage.getCause() == DamageCause.VOID && entity.getLocation().getBlockY() >= BukkitAdapter.ADAPTER.getMinHeight(entity.getWorld()));
+        final EntityDamageEvent.DamageCause cause = damage.getCause();
+        boolean isCommand = cause == DamageCause.KILL || (cause == DamageCause.VOID && entity.getLocation().getBlockY() >= BukkitAdapter.ADAPTER.getMinHeight(entity.getWorld()));
         if (e == null) {
             e = isCommand ? "#command" : "";
         }
 
-        if (entity.getType().name().equals("GLOW_SQUID") && damage.getCause() == DamageCause.DROWNING) {
+        if (entity.getType() == EntityType.GLOW_SQUID && cause == DamageCause.DROWNING) {
             return;
         }
 
-        List<DamageCause> validDamageCauses = Arrays.asList(DamageCause.SUICIDE, DamageCause.POISON, DamageCause.THORNS, DamageCause.MAGIC, DamageCause.WITHER);
+        if (Config.getConfig(entity.getWorld()).SKIP_GENERIC_DATA) {
+            // Skip logging deaths for short-lived (< 5 minutes) spawner entities.
+            if (entity.getEntitySpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER && entity.getTicksLived() <= 6000) {
+                return;
+            }
 
-        boolean skip = true;
-        EntityDamageEvent.DamageCause cause = damage.getCause();
-        if (!Config.getConfig(entity.getWorld()).SKIP_GENERIC_DATA || (!(entity instanceof Zombie) && !(entity instanceof Skeleton)) || (validDamageCauses.contains(cause) || cause.name().equals("KILL"))) {
-            skip = false;
+            // Skip entities burning in daylight
+            if (cause == DamageCause.FIRE_TICK && ((entity instanceof Zombie zombie && zombie.shouldBurnInDay()) || (entity instanceof AbstractSkeleton skeleton && skeleton.shouldBurnInDay())) && entity.getWorld().isDayTime()) {
+                return;
+            }
         }
 
-        if (damage instanceof EntityDamageByEntityEvent) {
-            EntityDamageByEntityEvent attack = (EntityDamageByEntityEvent) damage;
+        if (damage instanceof EntityDamageByEntityEvent attack) {
             Entity attacker = attack.getDamager();
 
-            if (attacker instanceof Player) {
-                Player player = (Player) attacker;
+            if (attacker instanceof Player player) {
                 e = player.getName();
             }
-            else if (attacker instanceof AbstractArrow) {
-                AbstractArrow arrow = (AbstractArrow) attacker;
-                ProjectileSource shooter = arrow.getShooter();
+            else if (attacker instanceof AbstractArrow || attacker instanceof ThrownPotion) {
+                ProjectileSource shooter = ((Projectile) attacker).getShooter();
 
-                if (shooter instanceof Player) {
-                    Player player = (Player) shooter;
+                if (shooter instanceof Player player) {
                     e = player.getName();
-                }
-                else if (shooter instanceof LivingEntity) {
-                    EntityType entityType = ((LivingEntity) shooter).getType();
-                    if (entityType != null) { // Check for MyPet plugin
-                        String name = entityType.name().toLowerCase(Locale.ROOT);
-                        e = "#" + name;
-                    }
+                } else if (shooter instanceof LivingEntity livingEntity) {
+                    EntityType entityType = livingEntity.getType();
+                    String name = entityType.name().toLowerCase(Locale.ROOT);
+                    e = "#" + name;
                 }
             }
-            else if (attacker instanceof ThrownPotion) {
-                ThrownPotion potion = (ThrownPotion) attacker;
-                ProjectileSource shooter = potion.getShooter();
-
-                if (shooter instanceof Player) {
-                    Player player = (Player) shooter;
-                    e = player.getName();
-                }
-                else if (shooter instanceof LivingEntity) {
-                    EntityType entityType = ((LivingEntity) shooter).getType();
-                    if (entityType != null) { // Check for MyPet plugin
-                        String name = entityType.name().toLowerCase(Locale.ROOT);
-                        e = "#" + name;
-                    }
-                }
-            }
-            else if (attacker.getType().name() != null) {
+            else {
                 e = "#" + attacker.getType().name().toLowerCase(Locale.ROOT);
             }
         }
         else {
-            if (cause.equals(EntityDamageEvent.DamageCause.FIRE)) {
+            if (cause.equals(EntityDamageEvent.DamageCause.FIRE) || cause == DamageCause.FIRE_TICK) {
                 e = "#fire";
-            }
-            else if (cause.equals(EntityDamageEvent.DamageCause.FIRE_TICK)) {
-                if (!skip) {
-                    e = "#fire";
-                }
             }
             else if (cause.equals(EntityDamageEvent.DamageCause.LAVA)) {
                 e = "#lava";
@@ -187,17 +165,15 @@ public final class EntityDeathListener extends Queue implements Listener {
         }
 
         EntityType entity_type = entity.getType();
-        if (e.length() == 0) {
+        if (e.isEmpty()) {
             // assume killed self
-            if (!skip) {
-                if (!(entity instanceof Player) && entity_type.name() != null) {
-                    // Player player = (Player)entity;
-                    // e = player.getName();
-                    e = "#" + entity_type.name().toLowerCase(Locale.ROOT);
-                }
-                else if (entity instanceof Player) {
-                    e = entity.getName();
-                }
+            if (!(entity instanceof Player) && entity_type.name() != null) {
+                // Player player = (Player)entity;
+                // e = player.getName();
+                e = "#" + entity_type.name().toLowerCase(Locale.ROOT);
+            }
+            else if (entity instanceof Player) {
+                e = entity.getName();
             }
         }
 
@@ -229,23 +205,8 @@ public final class EntityDeathListener extends Queue implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityDeath(EntityDeathEvent event) {
-        /*
-        System.out.println("ENTITY DEATH - " + event.getEntity().getName());
-        if (event.getEntity().getKiller() != null) {
-            System.out.println("^ (killer): " + event.getEntity().getKiller().getName());
-        }
-        else if (event.getEntity().getLastDamageCause() != null) {
-            System.out.println("^ (damage cause): " + event.getEntity().getLastDamageCause().getEntity().getName());
-        }
-        */
-
-        LivingEntity entity = event.getEntity();
-        if (entity == null) {
-            return;
-        }
-
-        logEntityDeath(entity, null);
+        logEntityDeath(event.getEntity(), null);
     }
 }
