@@ -4,7 +4,9 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.papermc.paper.entity.EntitySerializationFlag;
@@ -160,7 +162,11 @@ public class EntityUtils extends Queue {
             map.put("Air", 300);
             map.put("Bukkit.Aware", 1);
             map.put("Bukkit.updateLevel", 2);
+            map.put("FallDistance", 0);
+            map.put("FromBucket", 0);
     });
+
+    private static final Set<String> SKIP_EMPTY_OBJECTS = Set.of("ArmorItems", "HandItems");
 
     public static String serializeEntity(Entity entity) {
         final JsonObject object = JsonEntitySerializer.serializeEntityAsJson(entity, EntitySerializationFlag.FORCE);
@@ -196,6 +202,13 @@ public class EntityUtils extends Queue {
                 if (primitive.isNumber() && primitive.getAsInt() == entry.getValue()) {
                     object.remove(entry.getKey());
                 }
+            }
+        }
+
+        for (final String objectName : SKIP_EMPTY_OBJECTS) {
+            final JsonElement element = object.get(objectName);
+            if (element != null && element.isJsonObject() && element.getAsJsonObject().isEmpty()) {
+                object.remove(objectName);
             }
         }
 

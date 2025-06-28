@@ -102,6 +102,11 @@ public final class EntityDeathListener extends Queue implements Listener {
             if (cause == DamageCause.FIRE_TICK && ((entity instanceof Zombie zombie && zombie.shouldBurnInDay()) || (entity instanceof AbstractSkeleton skeleton && skeleton.shouldBurnInDay())) && entity.getWorld().isDayTime()) {
                 return;
             }
+
+            // A surprising amount of bats die from flying right into lava
+            if (entity.getType() == EntityType.BAT && (cause == DamageCause.LAVA || cause == DamageCause.FIRE || cause == DamageCause.FIRE_TICK)) {
+                return;
+            }
         }
 
         if (damage instanceof EntityDamageByEntityEvent attack) {
@@ -140,6 +145,10 @@ public final class EntityDeathListener extends Queue implements Listener {
             }
             else if (cause.equals(EntityDamageEvent.DamageCause.WITHER)) {
                 e = "#wither_effect";
+            } else if (cause == DamageCause.HOT_FLOOR) {
+                e = "#magma_block";
+            } else if (cause == DamageCause.SONIC_BOOM) {
+                e = "#warden";
             }
             else if (!cause.name().contains("_")) {
                 e = "#" + cause.name().toLowerCase(Locale.ROOT);
