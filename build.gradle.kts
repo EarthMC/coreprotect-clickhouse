@@ -76,7 +76,8 @@ tasks {
 
         expand(
             "version" to project.version,
-            "branch" to "development"
+            "branch" to "development",
+            "api_version" to libs.versions.minecraft.get()
         )
     }
 
