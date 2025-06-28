@@ -114,7 +114,7 @@ public class BlockConverter implements ConvertProcess {
                 insertStatement.setString(10, meta);
                 insertStatement.setString(11, rs.getString(11)); // blockdata
                 insertStatement.setInt(12, rs.getInt(12)); // action
-                insertStatement.setBoolean(13, rs.getBoolean(13)); // rolled_back
+                insertStatement.setInt(13, rs.getInt(13)); // rolled_back
 
                 insertStatement.addBatch();
 

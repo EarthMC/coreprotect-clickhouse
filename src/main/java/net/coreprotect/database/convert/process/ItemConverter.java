@@ -46,7 +46,7 @@ public class ItemConverter implements ConvertProcess {
                 insertStatement.setString(9, jsonData); // data
                 insertStatement.setInt(10, rs.getInt(10)); // amount
                 insertStatement.setInt(11, rs.getInt(11)); // action
-                insertStatement.setBoolean(12, rs.getBoolean(12)); // rolled_back
+                insertStatement.setInt(12, rs.getInt(12)); // rolled_back
 
                 insertStatement.addBatch();
 

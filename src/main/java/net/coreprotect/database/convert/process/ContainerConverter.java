@@ -39,8 +39,8 @@ public class ContainerConverter implements ConvertProcess {
                 String jsonData = ItemConverter.convertItemHexToJson(converter, rowId, rs.getString(11), rs.getInt(8), rs.getInt(10));
 
                 insertStatement.setString(11, jsonData); // metadata
-                insertStatement.setInt(12, rs.getInt(12));
-                insertStatement.setBoolean(13, rs.getBoolean(13));
+                insertStatement.setInt(12, rs.getInt(12)); // action
+                insertStatement.setInt(13, rs.getInt(13)); // rolled_back
 
                 insertStatement.addBatch();
 
