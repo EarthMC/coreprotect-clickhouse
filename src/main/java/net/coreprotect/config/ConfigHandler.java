@@ -1,7 +1,9 @@
 package net.coreprotect.config;
 
-import java.io.File;
-import java.io.RandomAccessFile;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -12,7 +14,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
+import net.coreprotect.CoreProtect;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.bukkit.Bukkit;
@@ -150,26 +154,24 @@ public class ConfigHandler extends Queue {
     }
 
     private static void loadBlacklist() {
-        try {
-            ConfigHandler.blacklist.clear();
-            String blacklist = ConfigHandler.path + "blacklist.txt";
-            boolean exists = (new File(blacklist)).exists();
-            if (exists) {
-                RandomAccessFile blfile = new RandomAccessFile(blacklist, "rw");
-                long blc = blfile.length();
-                if (blc > 0) {
-                    while (blfile.getFilePointer() < blfile.length()) {
-                        String blacklistUser = blfile.readLine().replaceAll(" ", "").toLowerCase(Locale.ROOT);
-                        if (blacklistUser.length() > 0) {
-                            ConfigHandler.blacklist.put(blacklistUser, true);
-                        }
-                    }
-                }
-                blfile.close();
-            }
+        final CoreProtect plugin = CoreProtect.getInstance();
+
+        ConfigHandler.blacklist.clear();
+
+        final Path blacklistPath = plugin.getDataPath().resolve("blacklist.txt");
+        if (!Files.exists(blacklistPath)) {
+            return;
         }
-        catch (Exception e) {
-            e.printStackTrace();
+
+        try (Stream<String> lines = Files.lines(blacklistPath, StandardCharsets.UTF_8)) {
+            lines.forEach(line -> {
+                String blacklistUser = line.replaceAll(" ", "").toLowerCase(Locale.ROOT);
+                if (!blacklistUser.isEmpty()) {
+                    ConfigHandler.blacklist.put(blacklistUser, true);
+                }
+            });
+        } catch (IOException e) {
+            plugin.getSLF4JLogger().warn("Failed to read blacklist.txt file", e);
         }
     }
 
