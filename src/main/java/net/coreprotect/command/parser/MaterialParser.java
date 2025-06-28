@@ -1,15 +1,29 @@
 package net.coreprotect.command.parser;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
+import net.coreprotect.CoreProtect;
+import net.coreprotect.command.TabHandler;
+import net.coreprotect.utility.Util;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
+import org.bukkit.Tag;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
 
 import net.coreprotect.language.Phrase;
@@ -18,11 +32,24 @@ import net.coreprotect.utility.Chat;
 import net.coreprotect.utility.Color;
 import net.coreprotect.utility.EntityUtils;
 import net.coreprotect.utility.MaterialUtils;
+import org.checkerframework.checker.units.qual.N;
 
 /**
  * Parser for material and entity related command arguments
  */
 public class MaterialParser {
+
+    private static final Map<String, Set<Material>> BUILTIN_TAGS = Util.make(new HashMap<>(), map -> {
+        map.put("#button", BlockGroup.BUTTONS);
+        map.put("#container", BlockGroup.CONTAINERS);
+        map.put("#door", BlockGroup.DOORS);
+        map.put("#natural", BlockGroup.NATURAL_BLOCKS);
+        map.put("#pressure_plate", BlockGroup.PRESSURE_PLATES);
+        map.put("#shulker_box", BlockGroup.SHULKER_BOXES);
+    });
+
+    // builtin tags + configured tags
+    private static final Map<String, Set<Material>> ALL_TAGS = Util.make(new HashMap<>(), map -> map.putAll(BUILTIN_TAGS));
 
     /**
      * Parse restricted materials and entities from command arguments
@@ -209,14 +236,7 @@ public class MaterialParser {
      * @return A map of block tags and their associated materials
      */
     public static Map<String, Set<Material>> getTags() {
-        Map<String, Set<Material>> tagMap = new HashMap<>();
-        tagMap.put("#button", BlockGroup.BUTTONS);
-        tagMap.put("#container", BlockGroup.CONTAINERS);
-        tagMap.put("#door", BlockGroup.DOORS);
-        tagMap.put("#natural", BlockGroup.NATURAL_BLOCKS);
-        tagMap.put("#pressure_plate", BlockGroup.PRESSURE_PLATES);
-        tagMap.put("#shulker_box", BlockGroup.SHULKER_BOXES);
-        return tagMap;
+        return ALL_TAGS;
     }
 
     /**
@@ -304,5 +324,92 @@ public class MaterialParser {
             }
         }
         return isBlock;
+    }
+
+    public static void loadConfiguredTags(CoreProtect plugin) {
+        ALL_TAGS.clear();
+        ALL_TAGS.putAll(BUILTIN_TAGS);
+
+        final Path customTagsFile = plugin.getDataPath().resolve("custom-tags.yml");
+        final YamlConfiguration configuration = new YamlConfiguration();
+
+        configuration.addDefault("_version", 1);
+        configuration.addDefault("groups.example", "dirt, stone");
+
+        configuration.options().setHeader(List.of(
+                "This file allows custom tags to be created, to be used inside include or exclude arguments inside lookup or rollback commands.",
+                "",
+                "You can use any item type or block name, item tags and block tags are also supported by putting a # before the name, such as #beds. See the below links for a full list of tags.",
+                "https://minecraft.wiki/w/Item_tag_(Java_Edition) & https://minecraft.wiki/w/Block_tag_(Java_Edition)"
+        ));
+
+        configuration.options().copyDefaults(true);
+
+        boolean successfullyRead = true;
+        if (Files.exists(customTagsFile)) {
+            try {
+                configuration.load(customTagsFile.toFile());
+            } catch (IOException | InvalidConfigurationException e) {
+                plugin.getSLF4JLogger().warn("Failed to read custom-tags.yml", e);
+                successfullyRead = false;
+            }
+        }
+
+        ConfigurationSection groupsSection = configuration.getConfigurationSection("groups");
+        if (groupsSection == null) {
+            groupsSection = configuration.createSection("groups");
+        }
+
+        for (final String key : groupsSection.getKeys(false)) {
+            final String value = groupsSection.getString(key, "");
+            if ("example".equals(key) || value.isEmpty()) {
+                continue;
+            }
+
+            Set<Material> materials = new HashSet<>();
+            for (String split : value.split(",")) {
+                split = split.trim().toLowerCase(Locale.ROOT);
+
+                if (split.startsWith("#")) {
+                    final NamespacedKey namespacedKey = NamespacedKey.fromString(split.substring(1));
+                    if (namespacedKey == null) {
+                        continue;
+                    }
+
+                    final Tag<Material> tag = Optional.ofNullable(plugin.getServer().getTag(Tag.REGISTRY_BLOCKS, namespacedKey, Material.class)).orElseGet(() -> plugin.getServer().getTag(Tag.REGISTRY_ITEMS, namespacedKey, Material.class));
+                    if (tag == null) {
+                        plugin.getSLF4JLogger().warn("Tag with name {} for custom tag {} does not exist", split.substring(1), key);
+                        continue;
+                    }
+
+                    materials.addAll(tag.getValues());
+                } else {
+                    final NamespacedKey namespacedKey = NamespacedKey.fromString(split);
+                    if (namespacedKey == null) {
+                        continue;
+                    }
+
+                    final Material material = Registry.MATERIAL.get(namespacedKey);
+                    if (material == null) {
+                        plugin.getSLF4JLogger().warn("No material found with name {} for custom tag {}", split, key);
+                        continue;
+                    }
+
+                    materials.add(material);
+                }
+            }
+
+            ALL_TAGS.put("#" + key, materials);
+        }
+
+        if (successfullyRead) {
+            try {
+                configuration.save(customTagsFile.toFile());
+            } catch (IOException e) {
+                plugin.getSLF4JLogger().warn("Failed to save custom-tags.yml", e);
+            }
+        }
+
+        TabHandler.materials = null; // force cached material list to be recalculated
     }
 }

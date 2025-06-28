@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import net.coreprotect.CoreProtect;
+import net.coreprotect.command.parser.MaterialParser;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.bukkit.Bukkit;
@@ -400,7 +401,7 @@ public class ConfigHandler extends Queue {
             BukkitAdapter.loadAdapter();
             SpigotAdapter.loadAdapter();
             PaperAdapter.loadAdapter();
-            BlockGroup.initialize();
+            MaterialParser.loadConfiguredTags(CoreProtect.getInstance());
 
             ConfigHandler.loadConfig(); // Load (or create) the configuration file.
             ConfigHandler.loadDatabase(); // Initialize MySQL and create tables if necessary.
