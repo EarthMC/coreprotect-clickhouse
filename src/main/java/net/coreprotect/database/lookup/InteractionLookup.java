@@ -58,64 +58,59 @@ public class InteractionLookup {
                 checkTime = time - offset;
             }
 
-            String query = "SELECT COUNT(*) as count from " + ConfigHandler.prefix + "block " + WorldUtils.getWidIndex("block") + "WHERE wid = '" + worldId + "' AND x = '" + x + "' AND z = '" + z + "' AND y = '" + y + "' AND action='2' AND time >= '" + checkTime + "' LIMIT 0, 1";
-            ResultSet results = statement.executeQuery(query);
+            String query = "SELECT count(*) over () as count, time,user,type,data,rolled_back FROM " + ConfigHandler.prefix + "block WHERE wid = '" + worldId + "' AND x = '" + x + "' AND z = '" + z + "' AND y = '" + y + "' AND action='2' AND time >= '" + checkTime + "' ORDER BY rowid DESC LIMIT " + limit + " OFFSET " + pageStart;
 
-            while (results.next()) {
-                count = results.getInt("count");
+            try (ResultSet results = statement.executeQuery(query)) {
+                StringBuilder resultBuilder = new StringBuilder();
+                while (results.next()) {
+                    count = results.getInt("count");
+                    int resultUserId = results.getInt("user");
+                    //int resultAction = results.getInt("action");
+                    int resultType = results.getInt("type");
+                    int resultData = results.getInt("data");
+                    long resultTime = results.getLong("time");
+                    int resultRolledBack = results.getInt("rolled_back");
+
+                    if (ConfigHandler.playerIdCacheReversed.get(resultUserId) == null) {
+                        UserStatement.loadName(statement.getConnection(), resultUserId);
+                    }
+
+                    String resultUser = ConfigHandler.playerIdCacheReversed.get(resultUserId);
+                    String timeAgo = ChatUtils.getTimeSince(resultTime, time, true);
+
+                    if (!found) {
+                        resultBuilder = new StringBuilder(Color.WHITE + "----- " + Color.DARK_AQUA + Phrase.build(Phrase.INTERACTIONS_HEADER) + Color.WHITE + " ----- " + ChatUtils.getCoordinates(command, worldId, x, y, z, false, false) + "\n");
+                    }
+                    found = true;
+
+                    String rbFormat = "";
+                    if (resultRolledBack == 1 || resultRolledBack == 3) {
+                        rbFormat = Color.STRIKETHROUGH;
+                    }
+
+                    Material resultMaterial = MaterialUtils.getType(resultType);
+                    if (resultMaterial == null) {
+                        resultMaterial = Material.AIR;
+                    }
+                    String target = resultMaterial.name().toLowerCase(Locale.ROOT);
+                    target = StringUtils.nameFilter(target, resultData);
+                    if (target.length() > 0) {
+                        target = "minecraft:" + target.toLowerCase(Locale.ROOT) + "";
+                    }
+
+                    // Hide "minecraft:" for now.
+                    if (target.startsWith("minecraft:")) {
+                        target = target.split(":")[1];
+                    }
+
+                    resultBuilder.append(timeAgo + " " + Color.WHITE + "- ").append(Phrase.build(Phrase.LOOKUP_INTERACTION, Color.DARK_AQUA + rbFormat + resultUser + Color.WHITE + rbFormat, Color.DARK_AQUA + rbFormat + target + Color.WHITE, Selector.FIRST)).append("\n");
+                    PluginChannelListener.getInstance().sendData(commandSender, resultTime, Phrase.LOOKUP_INTERACTION, Selector.FIRST, resultUser, target, -1, x, y, z, worldId, rbFormat, false, false);
+                }
+
+                result = resultBuilder.toString();
             }
-            results.close();
+
             int totalPages = (int) Math.ceil(count / (limit + 0.0));
-
-            query = "SELECT time,user,action,type,data,rolled_back FROM " + ConfigHandler.prefix + "block " + WorldUtils.getWidIndex("block") + "WHERE wid = '" + worldId + "' AND x = '" + x + "' AND z = '" + z + "' AND y = '" + y + "' AND action='2' AND time >= '" + checkTime + "' ORDER BY rowid DESC LIMIT " + pageStart + ", " + limit + "";
-            results = statement.executeQuery(query);
-
-            StringBuilder resultBuilder = new StringBuilder();
-            while (results.next()) {
-                int resultUserId = results.getInt("user");
-                int resultAction = results.getInt("action");
-                int resultType = results.getInt("type");
-                int resultData = results.getInt("data");
-                long resultTime = results.getLong("time");
-                int resultRolledBack = results.getInt("rolled_back");
-
-                if (ConfigHandler.playerIdCacheReversed.get(resultUserId) == null) {
-                    UserStatement.loadName(statement.getConnection(), resultUserId);
-                }
-
-                String resultUser = ConfigHandler.playerIdCacheReversed.get(resultUserId);
-                String timeAgo = ChatUtils.getTimeSince(resultTime, time, true);
-
-                if (!found) {
-                    resultBuilder = new StringBuilder(Color.WHITE + "----- " + Color.DARK_AQUA + Phrase.build(Phrase.INTERACTIONS_HEADER) + Color.WHITE + " ----- " + ChatUtils.getCoordinates(command, worldId, x, y, z, false, false) + "\n");
-                }
-                found = true;
-
-                String rbFormat = "";
-                if (resultRolledBack == 1 || resultRolledBack == 3) {
-                    rbFormat = Color.STRIKETHROUGH;
-                }
-
-                Material resultMaterial = MaterialUtils.getType(resultType);
-                if (resultMaterial == null) {
-                    resultMaterial = Material.AIR;
-                }
-                String target = resultMaterial.name().toLowerCase(Locale.ROOT);
-                target = StringUtils.nameFilter(target, resultData);
-                if (target.length() > 0) {
-                    target = "minecraft:" + target.toLowerCase(Locale.ROOT) + "";
-                }
-
-                // Hide "minecraft:" for now.
-                if (target.startsWith("minecraft:")) {
-                    target = target.split(":")[1];
-                }
-
-                resultBuilder.append(timeAgo + " " + Color.WHITE + "- ").append(Phrase.build(Phrase.LOOKUP_INTERACTION, Color.DARK_AQUA + rbFormat + resultUser + Color.WHITE + rbFormat, Color.DARK_AQUA + rbFormat + target + Color.WHITE, Selector.FIRST)).append("\n");
-                PluginChannelListener.getInstance().sendData(commandSender, resultTime, Phrase.LOOKUP_INTERACTION, Selector.FIRST, resultUser, target, -1, x, y, z, worldId, rbFormat, false, false);
-            }
-            result = resultBuilder.toString();
-            results.close();
 
             if (found) {
                 if (count > limit) {

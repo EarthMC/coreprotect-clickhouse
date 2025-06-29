@@ -60,73 +60,66 @@ public class ChestTransactionLookup {
             int rowMax = page * limit;
             int pageStart = rowMax - limit;
 
-            String query = "SELECT COUNT(*) as count from " + ConfigHandler.prefix + "container WHERE wid = '" + worldId + "' AND (x = '" + x + "' OR x = '" + x2 + "') AND (z = '" + z + "' OR z = '" + z2 + "') AND y = '" + y + "' LIMIT 0, 1";
+            String locationFilter = "(x = '" + x + "' OR x = '" + x2 + "') AND (z = '" + z + "' OR z = '" + z2 + "') AND y = '" + y + "'";
             if (exact) {
-                query = "SELECT COUNT(*) as count from " + ConfigHandler.prefix + "container WHERE wid = '" + worldId + "' AND (x = '" + l.getBlockX() + "') AND (z = '" + l.getBlockZ() + "') AND y = '" + y + "' LIMIT 0, 1";
+                locationFilter = "(x = '" + l.getBlockX() + "') AND (z = '" + l.getBlockZ() + "') AND y = '" + y + "'";
             }
-            ResultSet results = statement.executeQuery(query);
 
-            while (results.next()) {
-                count = results.getInt("count");
+            String query = "SELECT count(*) over () as count,time,user,action,type,data,amount,toString(metadata) as metadata,rolled_back FROM " + ConfigHandler.prefix + "container WHERE wid = '" + worldId + "' AND " + locationFilter + " ORDER BY rowid DESC LIMIT " + limit + " OFFSET " + pageStart + " SETTINGS output_format_json_quote_64bit_integers=0";
+
+            try (ResultSet results = statement.executeQuery(query)) {
+                while (results.next()) {
+                    count = results.getInt("count");
+                    int resultUserId = results.getInt("user");
+                    int resultAction = results.getInt("action");
+                    int resultType = results.getInt("type");
+                    int resultData = results.getInt("data");
+                    long resultTime = results.getLong("time");
+                    int resultAmount = results.getInt("amount");
+                    int resultRolledBack = results.getInt("rolled_back");
+                    String resultMetadata = results.getString("metadata");
+                    String tooltip = ItemUtils.getEnchantments(resultMetadata, resultType, resultAmount);
+
+                    if (ConfigHandler.playerIdCacheReversed.get(resultUserId) == null) {
+                        UserStatement.loadName(statement.getConnection(), resultUserId);
+                    }
+
+                    String resultUser = ConfigHandler.playerIdCacheReversed.get(resultUserId);
+                    String timeAgo = ChatUtils.getTimeSince(resultTime, time, true);
+
+                    if (!found) {
+                        result.add(Color.WHITE + "----- " + Color.DARK_AQUA + Phrase.build(Phrase.CONTAINER_HEADER) + Color.WHITE + " ----- " + ChatUtils.getCoordinates(command, worldId, x, y, z, false, false));
+                    }
+                    found = true;
+
+                    String selector = (resultAction != 0 ? Selector.FIRST : Selector.SECOND);
+                    String tag = (resultAction != 0 ? Color.GREEN + "+" : Color.RED + "-");
+                    String rbFormat = "";
+                    if (resultRolledBack == 1 || resultRolledBack == 3) {
+                        rbFormat = Color.STRIKETHROUGH;
+                    }
+
+                    Material resultMaterial = MaterialUtils.getType(resultType);
+                    if (resultMaterial == null) {
+                        resultMaterial = Material.AIR;
+                    }
+                    String target = resultMaterial.name().toLowerCase(Locale.ROOT);
+                    target = StringUtils.nameFilter(target, resultData);
+                    if (!target.isEmpty()) {
+                        target = "minecraft:" + target.toLowerCase(Locale.ROOT) + "";
+                    }
+
+                    // Hide "minecraft:" for now.
+                    if (target.startsWith("minecraft:")) {
+                        target = target.split(":")[1];
+                    }
+
+                    result.add(timeAgo + " " + tag + " " + Phrase.build(Phrase.LOOKUP_CONTAINER, Color.DARK_AQUA + rbFormat + resultUser + Color.WHITE + rbFormat, "x" + resultAmount, ChatUtils.createTooltip(Color.DARK_AQUA + rbFormat + target, tooltip) + Color.WHITE, selector));
+                    PluginChannelListener.getInstance().sendData(commandSender, resultTime, Phrase.LOOKUP_CONTAINER, selector, resultUser, target, resultAmount, x, y, z, worldId, rbFormat, true, tag.contains("+"));
+                }
             }
-            results.close();
 
             int totalPages = (int) Math.ceil(count / (limit + 0.0));
-
-            query = "SELECT time,user,action,type,data,amount,toString(metadata) as metadata,rolled_back FROM " + ConfigHandler.prefix + "container WHERE wid = '" + worldId + "' AND (x = '" + x + "' OR x = '" + x2 + "') AND (z = '" + z + "' OR z = '" + z2 + "') AND y = '" + y + "' ORDER BY rowid DESC LIMIT " + pageStart + ", " + limit + " SETTINGS output_format_json_quote_64bit_integers=0";
-            if (exact) {
-                query = "SELECT time,user,action,type,data,amount,toString(metadata) as metadata,rolled_back FROM " + ConfigHandler.prefix + "container WHERE wid = '" + worldId + "' AND (x = '" + l.getBlockX() + "') AND (z = '" + l.getBlockZ() + "') AND y = '" + y + "' ORDER BY rowid DESC LIMIT " + pageStart + ", " + limit + " SETTINGS output_format_json_quote_64bit_integers=0";
-            }
-            results = statement.executeQuery(query);
-            while (results.next()) {
-                int resultUserId = results.getInt("user");
-                int resultAction = results.getInt("action");
-                int resultType = results.getInt("type");
-                int resultData = results.getInt("data");
-                long resultTime = results.getLong("time");
-                int resultAmount = results.getInt("amount");
-                int resultRolledBack = results.getInt("rolled_back");
-                String resultMetadata = results.getString("metadata");
-                String tooltip = ItemUtils.getEnchantments(resultMetadata, resultType, resultAmount);
-
-                if (ConfigHandler.playerIdCacheReversed.get(resultUserId) == null) {
-                    UserStatement.loadName(statement.getConnection(), resultUserId);
-                }
-
-                String resultUser = ConfigHandler.playerIdCacheReversed.get(resultUserId);
-                String timeAgo = ChatUtils.getTimeSince(resultTime, time, true);
-
-                if (!found) {
-                    result.add(new StringBuilder(Color.WHITE + "----- " + Color.DARK_AQUA + Phrase.build(Phrase.CONTAINER_HEADER) + Color.WHITE + " ----- " + ChatUtils.getCoordinates(command, worldId, x, y, z, false, false)).toString());
-                }
-                found = true;
-
-                String selector = (resultAction != 0 ? Selector.FIRST : Selector.SECOND);
-                String tag = (resultAction != 0 ? Color.GREEN + "+" : Color.RED + "-");
-                String rbFormat = "";
-                if (resultRolledBack == 1 || resultRolledBack == 3) {
-                    rbFormat = Color.STRIKETHROUGH;
-                }
-
-                Material resultMaterial = MaterialUtils.getType(resultType);
-                if (resultMaterial == null) {
-                    resultMaterial = Material.AIR;
-                }
-                String target = resultMaterial.name().toLowerCase(Locale.ROOT);
-                target = StringUtils.nameFilter(target, resultData);
-                if (target.length() > 0) {
-                    target = "minecraft:" + target.toLowerCase(Locale.ROOT) + "";
-                }
-
-                // Hide "minecraft:" for now.
-                if (target.startsWith("minecraft:")) {
-                    target = target.split(":")[1];
-                }
-
-                result.add(new StringBuilder(timeAgo + " " + tag + " " + Phrase.build(Phrase.LOOKUP_CONTAINER, Color.DARK_AQUA + rbFormat + resultUser + Color.WHITE + rbFormat, "x" + resultAmount, ChatUtils.createTooltip(Color.DARK_AQUA + rbFormat + target, tooltip) + Color.WHITE, selector)).toString());
-                PluginChannelListener.getInstance().sendData(commandSender, resultTime, Phrase.LOOKUP_CONTAINER, selector, resultUser, target, resultAmount, x, y, z, worldId, rbFormat, true, tag.contains("+"));
-            }
-            results.close();
 
             if (found) {
                 if (count > limit) {
