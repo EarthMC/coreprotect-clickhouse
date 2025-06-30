@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import org.jetbrains.annotations.Contract;
 
 import java.util.HashSet;
@@ -128,5 +129,33 @@ public class JsonSerialization {
         }
 
         return key;
+    }
+
+    /**
+     * Recursively checks whether the given element is an empty array or object
+     *
+     * @param element A json element
+     * @return true if this element is a completely empty json array/object
+     */
+    public static boolean isEmpty(JsonElement element) {
+        if (element instanceof JsonObject object) {
+            for (JsonElement value : object.asMap().values()) {
+                if (!isEmpty(value)) {
+                    return false;
+                }
+            }
+
+            return true;
+        } else if (element instanceof JsonArray array) {
+            for (final JsonElement value : array) {
+                if (!isEmpty(value)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
     }
 }

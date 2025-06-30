@@ -164,9 +164,11 @@ public class EntityUtils extends Queue {
             map.put("Bukkit.updateLevel", 2);
             map.put("FallDistance", 0);
             map.put("FromBucket", 0);
+            map.put("DrownedConversionTime", -1);
+            map.put("InWaterTime", 0);
     });
 
-    private static final Set<String> SKIP_EMPTY_OBJECTS = Set.of("ArmorItems", "HandItems");
+    private static final Set<String> SKIP_EMPTY_ELEMENTS = Set.of("ArmorItems", "HandItems");
 
     public static String serializeEntity(Entity entity) {
         final JsonObject object = JsonEntitySerializer.serializeEntityAsJson(entity, EntitySerializationFlag.FORCE);
@@ -205,10 +207,10 @@ public class EntityUtils extends Queue {
             }
         }
 
-        for (final String objectName : SKIP_EMPTY_OBJECTS) {
-            final JsonElement element = object.get(objectName);
-            if (element != null && element.isJsonObject() && element.getAsJsonObject().isEmpty()) {
-                object.remove(objectName);
+        for (final String arrayName : SKIP_EMPTY_ELEMENTS) {
+            final JsonElement element = object.get(arrayName);
+            if (element != null && JsonSerialization.isEmpty(element)) {
+                object.remove(arrayName);
             }
         }
 

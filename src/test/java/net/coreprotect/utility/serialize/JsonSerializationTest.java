@@ -41,4 +41,18 @@ public class JsonSerializationTest {
         JsonSerialization.decodeKeys(object);
         assertEquals("a.b", Iterables.getFirst(object.get("array").getAsJsonArray().get(0).getAsJsonObject().asMap().keySet(), null));
     }
+
+    @Test
+    void testCheckEmptyArray() {
+        final JsonArray array = new JsonArray();
+
+        assertTrue(JsonSerialization.isEmpty(array));
+
+        array.add(new JsonObject());
+        array.add(new JsonObject());
+        array.add(new JsonObject());
+        array.add(new JsonObject());
+
+        assertTrue(JsonSerialization.isEmpty(array));
+    }
 }
