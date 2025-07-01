@@ -1,6 +1,7 @@
 package net.coreprotect.database;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,6 +10,15 @@ import java.util.Locale;
 import java.util.Map;
 
 import net.coreprotect.CoreProtect;
+import net.coreprotect.data.lookup.LookupResult;
+import net.coreprotect.data.lookup.result.ChatLookupResult;
+import net.coreprotect.data.lookup.result.SessionLookupResult;
+import net.coreprotect.data.lookup.result.SignLookupResult;
+import net.coreprotect.data.lookup.result.UsernameHistoryLookupResult;
+import net.coreprotect.data.lookup.type.ChatLookupData;
+import net.coreprotect.data.lookup.type.SessionLookupData;
+import net.coreprotect.data.lookup.type.SignLookupData;
+import net.coreprotect.data.lookup.type.UsernameHistoryData;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -17,7 +27,6 @@ import org.bukkit.entity.EntityType;
 import net.coreprotect.bukkit.BukkitAdapter;
 import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
-import net.coreprotect.consumer.Consumer;
 import net.coreprotect.consumer.Queue;
 import net.coreprotect.database.logger.ItemLogger;
 import net.coreprotect.database.statement.UserStatement;
@@ -28,8 +37,7 @@ import net.coreprotect.utility.WorldUtils;
 
 public class LookupRaw extends Queue {
 
-    protected static List<Object[]> performLookupRaw(Statement statement, CommandSender user, List<String> checkUuids, List<String> checkUsers, List<Object> restrictList, Map<Object, Boolean> excludeList, List<String> excludeUserList, List<Integer> actionList, Location location, Integer[] radius, Long[] rowData, long startTime, long endTime, int limitOffset, int limitCount, boolean restrictWorld, boolean lookup) {
-        List<Object[]> list = new ArrayList<>();
+    protected static LookupResult<?> performLookup(Statement statement, CommandSender user, List<String> checkUuids, List<String> checkUsers, List<Object> restrictList, Map<Object, Boolean> excludeList, List<String> excludeUserList, List<Integer> actionList, Location location, Integer[] radius, Long[] rowData, long startTime, long endTime, int limitOffset, int limitCount, boolean restrictWorld, boolean lookup, boolean countRows) {
         List<Integer> invalidRollbackActions = new ArrayList<>();
         invalidRollbackActions.add(2);
 
@@ -41,35 +49,36 @@ public class LookupRaw extends Queue {
             invalidRollbackActions.clear();
         }
 
-        try {
-            while (Consumer.isPaused) {
-                Thread.sleep(1);
-            }
+        try (final ResultSet results = rawLookupResultSet(statement, user, checkUuids, checkUsers, restrictList, excludeList, excludeUserList, actionList, location, radius, rowData, startTime, endTime, limitOffset, limitCount, restrictWorld, lookup, countRows)) {
 
-            Consumer.isPaused = true;
+            long rowCount = 0;
 
-            ResultSet results = rawLookupResultSet(statement, user, checkUuids, checkUsers, restrictList, excludeList, excludeUserList, actionList, location, radius, rowData, startTime, endTime, limitOffset, limitCount, restrictWorld, lookup, false);
+            if (actionList.contains(6) || actionList.contains(7)) { // chat/command
+                final List<ChatLookupData> data = new ArrayList<>();
 
-            while (results.next()) {
-                if (actionList.contains(6) || actionList.contains(7)) {
+                while (results.next()) {
+                    rowCount = results.getLong("count");
                     long resultId = results.getLong("id");
                     int resultTime = results.getInt("time");
                     int resultUserId = results.getInt("user");
                     String resultMessage = results.getString("message");
 
-                    Object[] dataArray = new Object[] { resultId, resultTime, resultUserId, resultMessage };
-                    if (PluginChannelHandshakeListener.getInstance().isPluginChannelPlayer(user)) {
-                        int resultWorldId = results.getInt("wid");
-                        int resultX = results.getInt("x");
-                        int resultY = results.getInt("y");
-                        int resultZ = results.getInt("z");
-                        dataArray = new Object[] { resultId, resultTime, resultUserId, resultMessage, resultWorldId, resultX, resultY, resultZ };
-                    }
-                    list.add(dataArray);
+                    int resultWorldId = results.getInt("wid");
+                    int resultX = results.getInt("x");
+                    int resultY = results.getInt("y");
+                    int resultZ = results.getInt("z");
+
+                    data.add(new ChatLookupData(resultId, resultTime, resultUserId, resultMessage, resultWorldId, resultX, resultY, resultZ));
                 }
-                else if (actionList.contains(8)) {
+
+                return new ChatLookupResult(rowCount, data);
+            } else if (actionList.contains(8)) {
+                final List<SessionLookupData> data = new ArrayList<>();
+
+                while (results.next()) {
+                    rowCount = results.getLong("count");
                     long resultId = results.getLong("id");
-                    int resultTime = results.getInt("time");
+                    long resultTime = results.getLong("time");
                     int resultUserId = results.getInt("user");
                     int resultWorldId = results.getInt("wid");
                     int resultX = results.getInt("x");
@@ -77,19 +86,29 @@ public class LookupRaw extends Queue {
                     int resultZ = results.getInt("z");
                     int resultAction = results.getInt("action");
 
-                    Object[] dataArray = new Object[] { resultId, resultTime, resultUserId, resultWorldId, resultX, resultY, resultZ, resultAction };
-                    list.add(dataArray);
+                    data.add(new SessionLookupData(resultId, resultTime, resultUserId, resultWorldId, resultX, resultY, resultZ, resultAction));
                 }
-                else if (actionList.contains(9)) {
+
+                return new SessionLookupResult(rowCount, data);
+            } else if (actionList.contains(9)) {
+                final List<UsernameHistoryData> data = new ArrayList<>();
+
+                while (results.next()) {
+                    rowCount = results.getLong("count");
                     long resultId = results.getLong("id");
-                    int resultTime = results.getInt("time");
+                    long resultTime = results.getLong("time");
                     String resultUuid = results.getString("uuid");
                     String resultUser = results.getString("user");
 
-                    Object[] dataArray = new Object[] { resultId, resultTime, resultUuid, resultUser };
-                    list.add(dataArray);
+                    data.add(new UsernameHistoryData(resultId, resultTime, resultUuid, resultUser));
                 }
-                else if (actionList.contains(10)) {
+
+                return new UsernameHistoryLookupResult(rowCount, data);
+            } else if (actionList.contains(10)) {
+                final List<SignLookupData> data = new ArrayList<>();
+
+                while (results.next()) {
+                    rowCount = results.getLong("count");
                     long resultId = results.getLong("id");
                     int resultTime = results.getInt("time");
                     int resultUserId = results.getInt("user");
@@ -108,116 +127,112 @@ public class LookupRaw extends Queue {
                     String line8 = results.getString("line_8");
 
                     StringBuilder message = new StringBuilder();
-                    if (isFront && line1 != null && line1.length() > 0) {
+                    if (isFront && line1 != null && !line1.isEmpty()) {
                         message.append(line1);
                         if (!line1.endsWith(" ")) {
                             message.append(" ");
                         }
                     }
-                    if (isFront && line2 != null && line2.length() > 0) {
+                    if (isFront && line2 != null && !line2.isEmpty()) {
                         message.append(line2);
                         if (!line2.endsWith(" ")) {
                             message.append(" ");
                         }
                     }
-                    if (isFront && line3 != null && line3.length() > 0) {
+                    if (isFront && line3 != null && !line3.isEmpty()) {
                         message.append(line3);
                         if (!line3.endsWith(" ")) {
                             message.append(" ");
                         }
                     }
-                    if (isFront && line4 != null && line4.length() > 0) {
+                    if (isFront && line4 != null && !line4.isEmpty()) {
                         message.append(line4);
                         if (!line4.endsWith(" ")) {
                             message.append(" ");
                         }
                     }
-                    if (!isFront && line5 != null && line5.length() > 0) {
+                    if (!isFront && line5 != null && !line5.isEmpty()) {
                         message.append(line5);
                         if (!line5.endsWith(" ")) {
                             message.append(" ");
                         }
                     }
-                    if (!isFront && line6 != null && line6.length() > 0) {
+                    if (!isFront && line6 != null && !line6.isEmpty()) {
                         message.append(line6);
                         if (!line6.endsWith(" ")) {
                             message.append(" ");
                         }
                     }
-                    if (!isFront && line7 != null && line7.length() > 0) {
+                    if (!isFront && line7 != null && !line7.isEmpty()) {
                         message.append(line7);
                         if (!line7.endsWith(" ")) {
                             message.append(" ");
                         }
                     }
-                    if (!isFront && line8 != null && line8.length() > 0) {
+                    if (!isFront && line8 != null && !line8.isEmpty()) {
                         message.append(line8);
                         if (!line8.endsWith(" ")) {
                             message.append(" ");
                         }
                     }
 
-                    Object[] dataArray = new Object[] { resultId, resultTime, resultUserId, resultWorldId, resultX, resultY, resultZ, message.toString() };
-                    list.add(dataArray);
+                    data.add(new SignLookupData(resultId, resultTime, resultUserId, resultWorldId, resultX, resultY, resultZ, message.toString()));
                 }
-                else {
-                    int resultData = 0;
-                    int resultAmount = -1;
-                    int resultTable = 0;
-                    String resultMeta = null;
-                    String resultBlockData = null;
-                    long resultId = results.getLong("id");
-                    int resultUserId = results.getInt("user");
-                    int resultAction = results.getInt("action");
-                    int resultRolledBack = results.getInt("rolled_back");
-                    int resultType = results.getInt("type");
-                    int resultTime = results.getInt("time");
-                    int resultX = results.getInt("x");
-                    int resultY = results.getInt("y");
-                    int resultZ = results.getInt("z");
-                    int resultWorldId = results.getInt("wid");
 
-                    boolean hasTbl = false;
-                    if ((lookup && actionList.size() == 0) || actionList.contains(4) || actionList.contains(5) || actionList.contains(11)) {
-                        resultData = results.getInt("data");
-                        resultAmount = results.getInt("amount");
-                        resultMeta = results.getString("metadata");
-                        resultTable = results.getInt("tbl");
-                        hasTbl = true;
-                    }
-                    else {
-                        resultData = results.getInt("data");
-                        resultMeta = results.getString("meta");
-                        resultBlockData = results.getString("blockdata");
-                    }
+                return new SignLookupResult(rowCount, data);
+            } else {
+                int resultData = 0;
+                int resultAmount = -1;
+                int resultTable = 0;
+                String resultMeta = null;
+                String resultBlockData = null;
+                long resultId = results.getLong("id");
+                int resultUserId = results.getInt("user");
+                int resultAction = results.getInt("action");
+                int resultRolledBack = results.getInt("rolled_back");
+                int resultType = results.getInt("type");
+                int resultTime = results.getInt("time");
+                int resultX = results.getInt("x");
+                int resultY = results.getInt("y");
+                int resultZ = results.getInt("z");
+                int resultWorldId = results.getInt("wid");
 
-                    boolean valid = true;
-                    if (!lookup) {
-                        if (invalidRollbackActions.contains(resultAction)) {
-                            valid = false;
-                        }
-                    }
+                boolean hasTbl = false;
+                if ((lookup && actionList.isEmpty()) || actionList.contains(4) || actionList.contains(5) || actionList.contains(11)) {
+                    resultData = results.getInt("data");
+                    resultAmount = results.getInt("amount");
+                    resultMeta = results.getString("metadata");
+                    resultTable = results.getInt("tbl");
+                    hasTbl = true;
+                } else {
+                    resultData = results.getInt("data");
+                    resultMeta = results.getString("meta");
+                    resultBlockData = results.getString("blockdata");
+                }
 
-                    if (valid) {
-                        if (hasTbl) {
-                            Object[] dataArray = new Object[] { resultId, resultTime, resultUserId, resultX, resultY, resultZ, resultType, resultData, resultAction, resultRolledBack, resultWorldId, resultAmount, resultMeta, resultBlockData, resultTable };
-                            list.add(dataArray);
-                        }
-                        else {
-                            Object[] dataArray = new Object[] { resultId, resultTime, resultUserId, resultX, resultY, resultZ, resultType, resultData, resultAction, resultRolledBack, resultWorldId, resultAmount, resultMeta, resultBlockData };
-                            list.add(dataArray);
-                        }
+                boolean valid = true;
+                if (!lookup) {
+                    if (invalidRollbackActions.contains(resultAction)) {
+                        valid = false;
+                    }
+                }
+
+                if (valid) {
+                    if (hasTbl) {
+                        Object[] dataArray = new Object[]{resultId, resultTime, resultUserId, resultX, resultY, resultZ, resultType, resultData, resultAction, resultRolledBack, resultWorldId, resultAmount, resultMeta, resultBlockData, resultTable};
+                        list.add(dataArray);
+                    } else {
+                        Object[] dataArray = new Object[]{resultId, resultTime, resultUserId, resultX, resultY, resultZ, resultType, resultData, resultAction, resultRolledBack, resultWorldId, resultAmount, resultMeta, resultBlockData};
+                        list.add(dataArray);
                     }
                 }
             }
-            results.close();
         }
-        catch (Exception e) {
+        catch (SQLException e) {
             e.printStackTrace();
         }
 
-        Consumer.isPaused = false;
-        return list;
+        return null;
     }
 
     static ResultSet rawLookupResultSet(Statement statement, CommandSender user, List<String> checkUuids, List<String> checkUsers, List<Object> restrictList, Map<Object, Boolean> excludeList, List<String> excludeUserList, List<Integer> actionList, Location location, Integer[] radius, Long[] rowData, long startTime, long endTime, int limitOffset, int limitCount, boolean restrictWorld, boolean lookup, boolean count) {
