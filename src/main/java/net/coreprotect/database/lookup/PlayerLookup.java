@@ -3,9 +3,13 @@ package net.coreprotect.database.lookup;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Locale;
 
+import net.coreprotect.CoreProtect;
 import net.coreprotect.config.ConfigHandler;
+import net.coreprotect.database.Database;
+import net.coreprotect.database.statement.UserStatement;
 
 public class PlayerLookup {
 
@@ -46,4 +50,17 @@ public class PlayerLookup {
         return false;
     }
 
+    public static String playerName(int playerId) {
+        final String cachedName = ConfigHandler.playerIdCacheReversed.get(playerId);
+        if (cachedName != null) {
+            return cachedName;
+        }
+
+        try (final Connection connection = Database.getConnection(false, 250)) {
+            return UserStatement.loadName(connection, playerId);
+        } catch (SQLException e) {
+            CoreProtect.getInstance().getSLF4JLogger().warn("Failed to query player name for id {}", playerId, e);
+            return null;
+        }
+    }
 }

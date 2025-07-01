@@ -37,11 +37,20 @@ public class UserStatement {
     }
 
     public static int getId(PreparedStatement preparedStatement, String user, boolean load) throws SQLException {
-        if (load && !ConfigHandler.playerIdCache.containsKey(user.toLowerCase(Locale.ROOT))) {
-            UserStatement.loadId(preparedStatement.getConnection(), user, null);
+        return getId(preparedStatement.getConnection(), user, load);
+    }
+
+    public static int getId(Connection connection, String user, boolean load) {
+        Integer id = ConfigHandler.playerIdCache.get(user.toLowerCase(Locale.ROOT));
+        if (id == null && load) {
+            id = UserStatement.loadId(connection, user, null);
         }
 
-        return ConfigHandler.playerIdCache.get(user.toLowerCase(Locale.ROOT));
+        if (id == null || id < 0) {
+            throw new IllegalStateException("Could not get id for user " + user + ", attempted loading from db: " + load);
+        }
+
+        return id;
     }
 
     public static int loadId(Connection connection, String user, String uuid) {
@@ -54,7 +63,7 @@ public class UserStatement {
                 where = where + " OR uuid = ?";
             }
 
-            try (PreparedStatement preparedStmt = connection.prepareStatement("SELECT rowid as id, uuid FROM " + ConfigHandler.prefix + "user WHERE " + where + " ORDER BY rowid LIMIT 1")) {
+            try (PreparedStatement preparedStmt = connection.prepareStatement("SELECT rowid as id, uuid, user FROM " + ConfigHandler.prefix + "user WHERE " + where + " ORDER BY rowid LIMIT 1")) {
                 preparedStmt.setString(1, user.toLowerCase(Locale.ROOT));
 
                 if (uuid != null) {
@@ -65,6 +74,7 @@ public class UserStatement {
                 if (resultSet.next()) {
                     id = resultSet.getInt("id");
                     uuid = resultSet.getString("uuid");
+                    user = resultSet.getString("user");
                 }
             }
 
