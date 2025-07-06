@@ -6,7 +6,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import net.coreprotect.CoreProtect;
@@ -32,7 +31,6 @@ import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.consumer.Queue;
 import net.coreprotect.database.logger.ItemLogger;
 import net.coreprotect.database.statement.UserStatement;
-import net.coreprotect.listener.channel.PluginChannelHandshakeListener;
 import net.coreprotect.utility.EntityUtils;
 import net.coreprotect.utility.MaterialUtils;
 import net.coreprotect.utility.WorldUtils;
@@ -573,10 +571,7 @@ public class LookupRaw extends Queue {
             }
             else if (actionList.contains(6) || actionList.contains(7)) {
                 queryTable = "chat";
-                rows = "rowid as id,time,user,message";
-                if (PluginChannelHandshakeListener.getInstance().isPluginChannelPlayer(user)) {
-                    rows += ",wid,x,y,z";
-                }
+                rows = "rowid as id,time,user,message,wid,x,y,z";
 
                 if (actionList.contains(7)) {
                     queryTable = "command";
