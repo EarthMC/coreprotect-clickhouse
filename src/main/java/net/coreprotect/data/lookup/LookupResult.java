@@ -12,8 +12,7 @@ public abstract class LookupResult<T> {
     }
 
     /**
-     *
-     * @return The total amount of results
+     * @return The total amount of results for the query, or -1 if rows weren't counted for the query.
      */
     public long totalResultSize() {
         return this.count;

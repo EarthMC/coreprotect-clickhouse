@@ -558,8 +558,8 @@ public class LookupRaw extends Queue {
             String baseQuery = ((!includeEntity.isEmpty() || !excludeEntity.isEmpty()) ? queryEntity : queryBlock);
             if (limitOffset > -1 && limitCount > -1) {
                 queryLimit = " LIMIT " + limitCount;
-                queryLimitOffset = queryLimit + " OFFSET " + limitOffset;
-                unionLimit = " ORDER BY time DESC LIMIT " + limitCount + " OFFSET " + limitOffset;
+                unionLimit = countRows ? "" : (" ORDER BY time DESC LIMIT " + limitCount + " OFFSET " + limitOffset); // Do not add limits inside unions when rows need to be counted, otherwise the count breaks
+                queryLimitOffset = queryLimit + (limitOffset > 0 ? (" OFFSET " + limitOffset) : "");
             }
 
             String rows = "rowid as id,time,user,wid,x,y,z,action,type,toString(data) as data,toString(meta) as meta,blockdata,rolled_back";
@@ -649,7 +649,7 @@ public class LookupRaw extends Queue {
                 query += ")";
             }
 
-            query += queryOrder + (hasUnion ? queryLimit : queryLimitOffset) + " SETTINGS output_format_json_quote_64bit_integers=0";
+            query += queryOrder + (hasUnion && !countRows ? queryLimit : queryLimitOffset) + " SETTINGS output_format_json_quote_64bit_integers=0";
             return statement.executeQuery(query);
         }
         catch (Exception e) {
