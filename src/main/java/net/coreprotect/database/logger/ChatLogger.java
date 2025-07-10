@@ -16,6 +16,10 @@ public class ChatLogger {
     }
 
     public static void log(PreparedStatement preparedStmt, int batchCount, long time, Location location, String user, String message) {
+        log(preparedStmt, batchCount, time, location, user, message, false);
+    }
+
+    public static void log(PreparedStatement preparedStmt, int batchCount, long time, Location location, String user, String message, boolean cancelled) {
         try {
             if (ConfigHandler.blacklist.get(user.toLowerCase(Locale.ROOT)) != null) {
                 return;
@@ -25,7 +29,7 @@ public class ChatLogger {
             int z = location.getBlockZ();
             int wid = WorldUtils.getWorldId(location.getWorld().getName());
             int userId = ConfigHandler.playerIdCache.get(user.toLowerCase(Locale.ROOT));
-            ChatStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, message);
+            ChatStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, message, cancelled);
         }
         catch (Exception e) {
             e.printStackTrace();

@@ -176,7 +176,7 @@ public class Patch {
                     boolean success = false;
                     try {
                         Chat.console("-----");
-                        Chat.console(Phrase.build(Phrase.PATCH_STARTED, "v" + patchMinor + "." + patchRevision));
+                        Chat.console(Phrase.build(Phrase.PATCH_STARTED, "v" + patchMajor + "." + patchMinor + "." + patchRevision));
                         Chat.console("-----");
 
                         if (continuePatch()) {
@@ -213,10 +213,10 @@ public class Patch {
             // mark as being up to date
             int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
             if (result >= 0) {
-                statement.executeUpdate("INSERT INTO " + ConfigHandler.prefix + "version (time,version) VALUES ('" + unixtimestamp + "', '" + version[0] + "." + version[1] + "." + version[2] + "')");
+                statement.executeUpdate("INSERT INTO " + ConfigHandler.prefix + "version (rowid,time,version) VALUES ('" + CoreProtect.getInstance().rowNumbers().nextRowId("version", connection) + "', '" + unixtimestamp + "', '" + version[0] + "." + version[1] + "." + version[2] + "')");
             }
             else if (patched) {
-                statement.executeUpdate("INSERT INTO " + ConfigHandler.prefix + "version (time,version) VALUES ('" + unixtimestamp + "', '" + newVersion[0] + "." + newVersion[1] + "." + newVersion[2] + "')");
+                statement.executeUpdate("INSERT INTO " + ConfigHandler.prefix + "version (rowid,time,version) VALUES ('" + CoreProtect.getInstance().rowNumbers().nextRowId("version", connection) + "', '" + unixtimestamp + "', '" + newVersion[0] + "." + newVersion[1] + "." + newVersion[2] + "')");
             }
 
             statement.close();
@@ -244,7 +244,7 @@ public class Patch {
                     return false;
                 }
 
-                if (ConfigHandler.EDITION_BRANCH.contains("-dev")) {
+                if (ConfigHandler.EDITION_BRANCH.contains("-dev") && false) {
                     Chat.sendConsoleMessage("§e[CoreProtect] " + Phrase.build(Phrase.DEVELOPMENT_BRANCH));
                     return true;
                 }
@@ -253,57 +253,53 @@ public class Patch {
                 Consumer.isPaused = true;
                 final Integer[] oldVersion = lastVersion;
                 final Integer[] newVersionFinal = currentVersion;
-                class patchStatus implements Runnable {
-                    @Override
-                    public void run() {
-                        try {
-                            int time_start = (int) (System.currentTimeMillis() / 1000L);
-                            int alertTime = time_start + 10;
-                            if (patchNotification) {
-                                alertTime = alertTime + 20;
-                            }
-                            while (ConfigHandler.converterRunning) {
-                                int time = (int) (System.currentTimeMillis() / 1000L);
-                                if (time >= alertTime) {
-                                    Chat.console(Phrase.build(Phrase.PATCH_UPGRADING));
-                                    alertTime = alertTime + 30;
-                                    patchNotification = true;
-                                }
-                                Thread.sleep(1000);
-                            }
+                final Runnable patchStatus = () -> {
+                    try {
+                        int time_start = (int) (System.currentTimeMillis() / 1000L);
+                        int alertTime = time_start + 10;
+                        if (patchNotification) {
+                            alertTime = alertTime + 20;
                         }
-                        catch (Exception e) {
-                            e.printStackTrace();
+                        while (ConfigHandler.converterRunning) {
+                            int time = (int) (System.currentTimeMillis() / 1000L);
+                            if (time >= alertTime) {
+                                Chat.console(Phrase.build(Phrase.PATCH_UPGRADING));
+                                alertTime = alertTime + 30;
+                                patchNotification = true;
+                            }
+                            Thread.sleep(1000);
                         }
                     }
-                }
-                class runPatch implements Runnable {
-                    @Override
-                    public void run() {
-                        try {
-                            int finished = runPatcher(oldVersion, newVersionFinal);
-                            ConfigHandler.converterRunning = false;
-                            if (finished == 1) {
-                                processConsumer();
-                                Chat.console("-----");
-                                Chat.console(Phrase.build(Phrase.PATCH_SUCCESS, "v" + CoreProtect.getInstance().getDescription().getVersion()));
-                                Chat.console("-----");
-                            }
-                            else if (finished == 0) {
-                                Consumer.isPaused = false;
-                            }
-                            else if (finished == -1) {
-                                processConsumer();
-                                Chat.console(Phrase.build(Phrase.PATCH_INTERRUPTED));
-                            }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                };
+
+                final Runnable runPatch = () -> {
+                    try {
+                        int finished = runPatcher(oldVersion, newVersionFinal);
+                        ConfigHandler.converterRunning = false;
+                        if (finished == 1) {
+                            processConsumer();
+                            Chat.console("-----");
+                            Chat.console(Phrase.build(Phrase.PATCH_SUCCESS, "v" + CoreProtect.getInstance().getDescription().getVersion()));
+                            Chat.console("-----");
                         }
-                        catch (Exception e) {
-                            e.printStackTrace();
+                        else if (finished == 0) {
+                            Consumer.isPaused = false;
+                        }
+                        else if (finished == -1) {
+                            processConsumer();
+                            Chat.console(Phrase.build(Phrase.PATCH_INTERRUPTED));
                         }
                     }
-                }
-                (new Thread(new runPatch())).start();
-                (new Thread(new patchStatus())).start();
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                };
+
+                (new Thread(runPatch)).start();
+                (new Thread(patchStatus)).start();
             }
             else if (lastVersion[0] == 0) {
                 int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);

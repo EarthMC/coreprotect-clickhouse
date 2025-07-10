@@ -230,8 +230,9 @@ public class StandardLookupThread implements Runnable {
                     case ChatLookupResult chatResult -> {
                         for (ChatLookupData data : chatResult.data()) {
                             String timeAgo = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true);
+                            final String dashColor = data.cancelled() ? Color.RED : Color.WHITE;
 
-                            Chat.sendComponent(player, timeAgo + " " + Color.WHITE + "- " + Color.DARK_AQUA + data.playerName() + ": " + Color.WHITE, data.message());
+                            Chat.sendComponent(player, timeAgo + " " + dashColor + "- " + Color.DARK_AQUA + data.playerName() + ": " + Color.WHITE, data.message());
                             if (PluginChannelHandshakeListener.getInstance().isPluginChannelPlayer(player)) {
                                 PluginChannelListener.getInstance().sendMessageData(player, data.time(), data.playerName(), data.message(), false, data.x(), data.y(), data.z(), data.worldId());
                             }

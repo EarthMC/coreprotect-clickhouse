@@ -59,6 +59,7 @@ public class LookupRaw extends Queue {
 
             if (actionList.contains(6) || actionList.contains(7)) { // chat/command
                 final List<ChatLookupData> data = new ArrayList<>();
+                final boolean isChat = actionList.contains(6);
 
                 while (results.next()) {
                     if (countRows) {
@@ -74,7 +75,12 @@ public class LookupRaw extends Queue {
                     int resultY = results.getInt("y");
                     int resultZ = results.getInt("z");
 
-                    data.add(new ChatLookupData(resultId, resultTime, resultUserId, resultMessage, resultWorldId, resultX, resultY, resultZ));
+                    boolean cancelled = false;
+                    if (isChat) {
+                        cancelled = results.getBoolean("cancelled");
+                    }
+
+                    data.add(new ChatLookupData(resultId, resultTime, resultUserId, resultMessage, cancelled, resultWorldId, resultX, resultY, resultZ));
                 }
 
                 return new ChatLookupResult(rowCount, data);
@@ -575,6 +581,8 @@ public class LookupRaw extends Queue {
 
                 if (actionList.contains(7)) {
                     queryTable = "command";
+                } else {
+                    rows += ",cancelled";
                 }
             }
             else if (actionList.contains(8)) {

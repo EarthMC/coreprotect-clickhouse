@@ -30,6 +30,6 @@ public final class PlayerChatListener extends Queue implements Listener {
         }
 
         long timestamp = System.currentTimeMillis() / 1000L;
-        Queue.queuePlayerChat(player, preEvent.getMessageToLog(), timestamp);
+        Queue.queuePlayerChat(player, preEvent.getMessageToLog(), timestamp, preEvent.isChatCancelled());
     }
 }

@@ -6,7 +6,6 @@ import java.util.Locale;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
-import net.coreprotect.CoreProtect;
 import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.database.statement.CommandStatement;
@@ -25,16 +24,9 @@ public class CommandLogger {
             if (ConfigHandler.blacklist.get(user.toLowerCase(Locale.ROOT)) != null) {
                 return;
             }
-            if (ConfigHandler.blacklist.get(((message + " ").split(" "))[0].toLowerCase(Locale.ROOT)) != null) {
-                return;
-            }
 
             CoreProtectPreLogEvent event = new CoreProtectPreLogEvent(user);
-            if (Config.getGlobal().API_ENABLED && !Bukkit.isPrimaryThread()) {
-                CoreProtect.getInstance().getServer().getPluginManager().callEvent(event);
-            }
-
-            if (event.isCancelled()) {
+            if (Config.getGlobal().API_ENABLED && !Bukkit.isPrimaryThread() && !event.callEvent()) {
                 return;
             }
 

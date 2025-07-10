@@ -28,17 +28,19 @@ public class VersionUtils {
     }
 
     public static Integer[] getInternalPluginVersion() {
-        int major = ConfigHandler.EDITION_VERSION;
+        int major = 0;
         int minor = 0;
         int revision = 0;
 
         String pluginVersion = getPluginVersion();
         if (pluginVersion.contains(".")) {
             String[] versionSplit = pluginVersion.split("\\.");
-            minor = Integer.parseInt(versionSplit[0]);
-            revision = Integer.parseInt(versionSplit[1]);
+            major = Integer.parseInt(versionSplit[0]);
+            minor = Integer.parseInt(versionSplit[1]);
+            revision = Integer.parseInt(versionSplit[2]);
         }
         else {
+            major = ConfigHandler.EDITION_VERSION;
             minor = Integer.parseInt(pluginVersion);
         }
 
@@ -117,15 +119,13 @@ public class VersionUtils {
 
     public static String getBranch() {
         String branch = "";
-        try {
+        try (InputStreamReader isr = new InputStreamReader(CoreProtect.class.getResourceAsStream("/plugin.yml"))) {
             CoreProtect instance = CoreProtect.getInstance();
             if (instance == null) {
                 return "";
             }
 
-            InputStreamReader reader = new InputStreamReader(instance.getClass().getResourceAsStream("/plugin.yml"));
-            branch = YamlConfiguration.loadConfiguration(reader).getString("branch");
-            reader.close();
+            branch = YamlConfiguration.loadConfiguration(isr).getString("branch");
 
             if (branch == null || branch.equals("${branch}")) {
                 branch = "";
@@ -133,7 +133,7 @@ public class VersionUtils {
             if (branch.startsWith("-")) {
                 branch = branch.substring(1);
             }
-            if (branch.length() > 0) {
+            if (!branch.isEmpty()) {
                 branch = "-" + branch;
             }
         }

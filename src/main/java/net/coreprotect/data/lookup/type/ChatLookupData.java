@@ -7,6 +7,7 @@ public record ChatLookupData(
         long time,
         int userId,
         String message,
+        boolean cancelled,
         int worldId,
         int x,
         int y,

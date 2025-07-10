@@ -55,7 +55,6 @@ import net.coreprotect.listener.world.LeavesDecayListener;
 import net.coreprotect.listener.world.PortalCreateListener;
 import net.coreprotect.listener.world.StructureGrowListener;
 import net.coreprotect.paper.listener.BlockPreDispenseListener;
-import net.coreprotect.paper.listener.PaperChatListener;
 
 public final class ListenerHandler {
 
@@ -107,14 +106,7 @@ public final class ListenerHandler {
         pluginManager.registerEvents(new HangingBreakListener(), plugin);
         pluginManager.registerEvents(new HangingBreakByEntityListener(), plugin);
 
-        // Paper Listeners / Fallbacks (Player Listeners)
-        try {
-            Class.forName("net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer"); // Paper 1.16+
-            pluginManager.registerEvents(new PaperChatListener(), plugin);
-        }
-        catch (Exception e) {
-            pluginManager.registerEvents(new PlayerChatListener(), plugin);
-        }
+        pluginManager.registerEvents(new PlayerChatListener(), plugin);
 
         // Player Listeners
         pluginManager.registerEvents(new ArmorStandManipulateListener(), plugin);

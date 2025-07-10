@@ -231,7 +231,7 @@ public class CoreProtectAPI extends Queue {
         }
 
         long timestamp = System.currentTimeMillis() / 1000L;
-        Queue.queuePlayerChat(player, message, timestamp);
+        Queue.queuePlayerChat(player, message, timestamp, false);
         return true;
     }
 
