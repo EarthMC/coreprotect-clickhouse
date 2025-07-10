@@ -1,7 +1,8 @@
 plugins {
     `java-library`
+    `maven-publish`
     id("io.papermc.paperweight.userdev") version "2.0.0-beta.17"
-    id("com.gradleup.shadow") version "9.0.0-beta15"
+    id("com.gradleup.shadow") version "9.0.0-rc1"
     id("xyz.jpenilla.run-paper") version "2.3.1"
 }
 
@@ -22,7 +23,7 @@ dependencies {
     implementation(libs.bstats)
     implementation(libs.clickhouse.jdbc)
 
-    implementation(platform("com.intellectualsites.bom:bom-newest:1.45"))
+    compileOnly(platform("com.intellectualsites.bom:bom-newest:1.45"))
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Core")
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit") {
         exclude(group = "*", module = "FastAsyncWorldEdit-Core")
@@ -35,19 +36,20 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-java.sourceCompatibility = JavaVersion.VERSION_21
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+
+    withJavadocJar()
+    withSourcesJar()
+}
 
 tasks {
-    assemble {
+    build {
         dependsOn(shadowJar)
     }
 
     runServer {
         minecraftVersion(libs.versions.minecraft.get())
-    }
-
-    jar {
-        archiveClassifier.set(libs.versions.minecraft)
     }
 
     shadowJar {
@@ -83,5 +85,24 @@ tasks {
 
     test {
         useJUnitPlatform()
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            val releasesUrl = "https://repo.earthmc.net/releases"
+            val snapshotsUrl = "https://repo.earthmc.net/snapshots"
+            url = uri(if (project.version.toString().endsWith("-SNAPSHOT")) snapshotsUrl else releasesUrl)
+
+            name = "earthmc"
+            credentials(PasswordCredentials::class)
+        }
+    }
+
+    publications {
+        create<MavenPublication>("maven") {
+            from(components.getByName("java"))
+        }
     }
 }
