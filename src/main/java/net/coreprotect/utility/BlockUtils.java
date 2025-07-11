@@ -10,6 +10,7 @@ import net.coreprotect.utility.serialize.BannerData;
 import net.coreprotect.utility.serialize.JsonSerialization;
 import net.coreprotect.utility.serialize.SerializedBlockMeta;
 import net.coreprotect.utility.serialize.SerializedItem;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Banner;
 import org.bukkit.block.Block;
@@ -169,17 +170,17 @@ public class BlockUtils {
         }
     }
 
-    public static void prepareTypeAndData(Map<Block, BlockData> map, Block block, Material type, BlockData blockData, boolean update) {
+    public static void prepareTypeAndData(Map<Location, BlockData> map, Block block, Material type, BlockData blockData, boolean update) {
         if (blockData == null) {
             blockData = createBlockData(type);
         }
 
         if (!update) {
             setTypeAndData(block, type, blockData, update);
-            map.remove(block);
+            map.remove(block.getLocation());
         }
         else {
-            map.put(block, blockData);
+            map.put(block.getLocation(), blockData);
         }
     }
 

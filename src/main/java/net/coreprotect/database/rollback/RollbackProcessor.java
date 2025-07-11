@@ -69,7 +69,7 @@ public class RollbackProcessor {
             boolean clearInventories = Config.getGlobal().ROLLBACK_ITEMS;
             List<CommonLookupData> data = blockList != null ? blockList : new ArrayList<>();
             List<CommonLookupData> itemData = itemList != null ? itemList : new ArrayList<>();
-            Map<Block, BlockData> chunkChanges = new LinkedHashMap<>();
+            Map<Location, BlockData> chunkChanges = new LinkedHashMap<>();
 
             // Process blocks
             for (CommonLookupData row : data) {

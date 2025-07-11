@@ -50,7 +50,6 @@ import net.coreprotect.utility.BlockUtils;
 import net.coreprotect.utility.ChestTool;
 import net.coreprotect.utility.EntityUtils;
 import net.coreprotect.utility.ItemUtils;
-import net.coreprotect.utility.Util;
 import net.coreprotect.utility.entity.HangingUtil;
 
 public class RollbackBlockHandler extends Queue {
@@ -110,7 +109,7 @@ public class RollbackBlockHandler extends Queue {
      *            The block data as a string
      * @return Updated count status
      */
-    public static boolean processBlockChange(Block block, CommonLookupData row, int rollbackType, boolean clearInventories, Map<Block, BlockData> chunkChanges, boolean countBlock, Material oldTypeMaterial, Material pendingChangeType, BlockData pendingChangeData, String finalUserString, BlockData rawBlockData, Material changeType, BlockData changeBlockData, SerializedBlockMeta meta, BlockData blockData, String rowUser, Material rowType, int rowX, int rowY, int rowZ, int rowTypeRaw, int rowData, int rowAction, int rowWorldId, String blockDataString) {
+    public static boolean processBlockChange(Block block, CommonLookupData row, int rollbackType, boolean clearInventories, Map<Location, BlockData> chunkChanges, boolean countBlock, Material oldTypeMaterial, Material pendingChangeType, BlockData pendingChangeData, String finalUserString, BlockData rawBlockData, Material changeType, BlockData changeBlockData, SerializedBlockMeta meta, BlockData blockData, String rowUser, Material rowType, int rowX, int rowY, int rowZ, int rowTypeRaw, int rowData, int rowAction, int rowWorldId, String blockDataString) {
 
         boolean changeBlock = true;
         World bukkitWorld = block.getWorld();
@@ -564,16 +563,19 @@ public class RollbackBlockHandler extends Queue {
      * @param user
      *            The user performing the rollback
      */
-    public static void applyBlockChanges(Map<Block, BlockData> chunkChanges, int preview, Player user) {
-        for (Entry<Block, BlockData> chunkChange : chunkChanges.entrySet()) {
-            Block changeBlock = chunkChange.getKey();
+    @SuppressWarnings("UnstableApiUsage")
+    public static void applyBlockChanges(Map<Location, BlockData> chunkChanges, int preview, Player user) {
+        if (preview > 0 && user != null) {
+            user.sendMultiBlockChange(chunkChanges);
+            chunkChanges.clear();
+            return;
+        }
+
+        for (Entry<Location, BlockData> chunkChange : chunkChanges.entrySet()) {
+            Block changeBlock = chunkChange.getKey().getBlock();
             BlockData changeBlockData = chunkChange.getValue();
-            if (preview > 0 && user != null) {
-                Util.sendBlockChange(user, changeBlock.getLocation(), changeBlockData);
-            }
-            else {
-                BlockUtils.setTypeAndData(changeBlock, null, changeBlockData, true);
-            }
+
+            BlockUtils.setTypeAndData(changeBlock, null, changeBlockData, true);
         }
         chunkChanges.clear();
     }
