@@ -55,6 +55,10 @@ public class Process {
     }
 
     protected static void updateLockTable(Statement statement, int locked) {
+        if (!Config.getGlobal().DATABASE_LOCK) {
+            return;
+        }
+
         try {
             int unixTimestamp = (int) (System.currentTimeMillis() / 1000L);
             int timeSinceLastUpdate = unixTimestamp - lastLockUpdate;
