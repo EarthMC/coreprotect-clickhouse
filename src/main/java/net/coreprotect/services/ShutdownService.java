@@ -84,6 +84,9 @@ public class ShutdownService {
      *            The time for the next status message
      */
     private static void waitForPendingOperations(long shutdownTime, long nextAlertTime) throws InterruptedException {
+        int lastConsumerSize = -1;
+        int stuckDetectionCount = 0;
+
         while ((Consumer.isRunning() || ConfigHandler.converterRunning) && !ConfigHandler.purgeRunning) {
             long currentTime = System.currentTimeMillis();
 
@@ -91,6 +94,19 @@ public class ShutdownService {
                 if (!ConfigHandler.converterRunning) {
                     int consumerId = (Consumer.currentConsumer == 1) ? 1 : 0;
                     int consumerCount = Consumer.getConsumerSize(consumerId) + Process.getCurrentConsumerSize();
+
+                    if (consumerCount == lastConsumerSize) {
+                        stuckDetectionCount++;
+                    } else {
+                        lastConsumerSize = consumerCount;
+                        stuckDetectionCount = 0;
+                    }
+
+                    if (stuckDetectionCount >= 5) {
+                        Chat.console("Detected that the consumer is stuck, forcefully exiting.");
+                        break;
+                    }
+
                     Chat.console(Phrase.build(Phrase.LOGGING_ITEMS, String.format("%,d", consumerCount)));
                 }
                 nextAlertTime = currentTime + ALERT_INTERVAL_MS;
