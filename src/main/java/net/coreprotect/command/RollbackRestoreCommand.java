@@ -424,7 +424,7 @@ public class RollbackRestoreCommand {
                                                 Chat.sendMessage(player2, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_STARTED, users, Selector.SECOND));
                                             }
 
-                                            if (finalArgAction.contains(5)) {
+                                            if (finalArgAction.contains(5) || finalArgAction.contains(4)) {
                                                 ContainerRollback.performContainerRollbackRestore(statement, player2, uuidList, rollbackusers2, rtime, blist, elist, euserlist, finalArgAction, location, radius, finalTimeStart, finalTimeEnd, restrictWorld, false, verbose, action);
                                             }
                                             else {

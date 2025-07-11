@@ -23,8 +23,8 @@ public record CommonLookupData(
         int amount,
         @Nullable String metadata,
         @Nullable String blockData,
-        @Nullable Integer table
-
+        @Nullable Integer table,
+        int version
 ) {
     public String playerName() {
         return PlayerLookup.playerName(this.userId);

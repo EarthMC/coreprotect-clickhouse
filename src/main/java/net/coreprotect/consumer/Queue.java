@@ -3,7 +3,7 @@ package net.coreprotect.consumer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.bukkit.Bukkit;
+import net.coreprotect.data.rollback.RollbackRowUpdate;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -340,16 +340,15 @@ public class Queue {
         queueStandardData(consumerId, currentConsumer, new String[] { player.getName(), null }, player.getLocation().clone());
     }
 
-    protected static void queueRollbackUpdate(String user, Location location, List<Object[]> list, int table, int action) {
-        if (location == null) {
-            location = new Location(Bukkit.getServer().getWorlds().get(0), 0, 0, 0);
+    protected static void queueRollbackUpdate(String user, List<RollbackRowUpdate> lookup, int table, int action) {
+        if (lookup == null || lookup.isEmpty()) {
+            return;
         }
 
         int currentConsumer = Consumer.currentConsumer;
         int consumerId = Consumer.newConsumerId(currentConsumer);
         addConsumer(currentConsumer, new Object[] { consumerId, table, null, 0, null, 0, action, null });
-        Consumer.consumerObjectArrayList.get(currentConsumer).put(consumerId, list);
-        queueStandardData(consumerId, currentConsumer, new String[] { user, null }, location);
+        queueStandardData(consumerId, currentConsumer, new String[] { user, null }, lookup);
     }
 
     protected static void queueSignText(String user, Location location, int action, int color, int colorSecondary, boolean frontGlowing, boolean backGlowing, boolean isWaxed, boolean isFront, String line1, String line2, String line3, String line4, String line5, String line6, String line7, String line8, int offset) {

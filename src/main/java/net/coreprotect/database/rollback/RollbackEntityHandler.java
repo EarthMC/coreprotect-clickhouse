@@ -18,8 +18,6 @@ public class RollbackEntityHandler {
     /**
      * Processes an entity-related rollback operation.
      *
-     * @param row
-     *            The database row containing entity data (used only for specific operations)
      * @param rollbackType
      *            The type of rollback (0 for rollback, 1 for restore)
      * @param finalUserString
@@ -46,7 +44,7 @@ public class RollbackEntityHandler {
      *            The username associated with this entity change
      * @return The number of entities affected (1 if successful, 0 otherwise)
      */
-    public static int processEntity(Object[] row, int rollbackType, String finalUserString, int oldTypeRaw, int rowTypeRaw, int rowData, int rowAction, int rowRolledBack, int rowX, int rowY, int rowZ, int rowWorldId, int rowUserId, String rowUser) {
+    public static int processEntity(int rollbackType, String finalUserString, int oldTypeRaw, int rowTypeRaw, int rowData, int rowAction, int rowRolledBack, int rowX, int rowY, int rowZ, int rowWorldId, int rowUserId, String rowUser) {
         try {
             // Entity kill
             if (rowAction == 3) {

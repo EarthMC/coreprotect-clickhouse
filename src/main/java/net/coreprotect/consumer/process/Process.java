@@ -84,7 +84,6 @@ public class Process {
             }
 
             Statement statement = connection.createStatement();
-            Database.performCheckpoint(statement, Config.getGlobal().MYSQL);
 
             Consumer.isPaused = true;
             ArrayList<Object[]> consumerData = Consumer.consumer.get(processId);

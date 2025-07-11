@@ -11,7 +11,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
+import net.coreprotect.data.lookup.LookupResult;
+import net.coreprotect.data.lookup.result.CommonLookupResult;
+import net.coreprotect.data.lookup.type.CommonLookupData;
+import net.coreprotect.data.rollback.RollbackRowUpdate;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -25,7 +30,6 @@ import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.consumer.Queue;
 import net.coreprotect.consumer.process.Process;
 import net.coreprotect.database.Lookup;
-import net.coreprotect.database.LookupConverter;
 import net.coreprotect.database.statement.UserStatement;
 import net.coreprotect.language.Phrase;
 import net.coreprotect.language.Selector;
@@ -38,18 +42,16 @@ import net.coreprotect.utility.WorldUtils;
 
 public class Rollback extends RollbackUtil {
 
-    public static List<String[]> performRollbackRestore(Statement statement, CommandSender user, List<String> checkUuids, List<String> checkUsers, String timeString, List<Object> restrictList, Map<Object, Boolean> excludeList, List<String> excludeUserList, List<Integer> actionList, Location location, Integer[] radius, long startTime, long endTime, boolean restrictWorld, boolean lookup, boolean verbose, final int rollbackType, final int preview) {
-        List<String[]> list = new ArrayList<>();
-
+    public static LookupResult<?> performRollbackRestore(Statement statement, CommandSender user, List<String> checkUuids, List<String> checkUsers, String timeString, List<Object> restrictList, Map<Object, Boolean> excludeList, List<String> excludeUserList, List<Integer> actionList, Location location, Integer[] radius, long startTime, long endTime, boolean restrictWorld, boolean lookup, boolean verbose, final int rollbackType, final int preview) {
         try {
             long timeStart = System.currentTimeMillis();
-            List<Object[]> lookupList = new ArrayList<>();
+            LookupResult<?> rawLookupResult = null;
 
             if (!actionList.contains(4) && !actionList.contains(5) && !checkUsers.contains("#container")) {
-                lookupList = Lookup.performLookupRaw(statement, user, checkUuids, checkUsers, restrictList, excludeList, excludeUserList, actionList, location, radius, null, startTime, endTime, -1, -1, restrictWorld, lookup);
+                rawLookupResult = Lookup.performLookup(statement, user, checkUuids, checkUsers, restrictList, excludeList, excludeUserList, actionList, location, radius, null, startTime, endTime, -1, -1, restrictWorld, lookup, false);
             }
 
-            if (lookupList == null) {
+            if (!(rawLookupResult instanceof final CommonLookupResult lookupResult)) {
                 return null;
             }
 
@@ -72,7 +74,7 @@ public class Rollback extends RollbackUtil {
                 }
             }
 
-            List<Object[]> itemList = new ArrayList<>();
+            CommonLookupResult itemLookupResult = null;
             if (Config.getGlobal().ROLLBACK_ITEMS && !checkUsers.contains("#container") && (actionList.size() == 0 || actionList.contains(4) || ROLLBACK_ITEMS) && preview == 0) {
                 List<Integer> itemActionList = new ArrayList<>(actionList);
 
@@ -81,13 +83,17 @@ public class Rollback extends RollbackUtil {
                 }
 
                 itemExcludeList.entrySet().removeIf(entry -> Boolean.TRUE.equals(entry.getValue()));
-                itemList = Lookup.performLookupRaw(statement, user, checkUuids, checkUsers, itemRestrictList, itemExcludeList, excludeUserList, itemActionList, location, radius, null, startTime, endTime, -1, -1, restrictWorld, lookup);
+                final LookupResult<?> rawItemResult = Lookup.performLookup(statement, user, checkUuids, checkUsers, itemRestrictList, itemExcludeList, excludeUserList, itemActionList, location, radius, null, startTime, endTime, -1, -1, restrictWorld, lookup, false);
+
+                if (rawItemResult instanceof CommonLookupResult commonResult) {
+                    itemLookupResult = commonResult;
+                }
             }
 
             LinkedHashSet<Integer> worldList = new LinkedHashSet<>();
             TreeMap<Long, Integer> chunkList = new TreeMap<>();
-            HashMap<Integer, HashMap<Long, ArrayList<Object[]>>> dataList = new HashMap<>();
-            HashMap<Integer, HashMap<Long, ArrayList<Object[]>>> itemDataList = new HashMap<>();
+            Map<Integer, Map<Long, List<CommonLookupData>>> dataList = new HashMap<>();
+            Map<Integer, Map<Long, List<CommonLookupData>>> itemDataList = new HashMap<>();
             boolean inventoryRollback = actionList.contains(11);
 
             int worldId = -1;
@@ -96,21 +102,21 @@ public class Rollback extends RollbackUtil {
 
             int listC = 0;
             while (listC < 2) {
-                List<Object[]> scanList = lookupList;
+                List<CommonLookupData> scanList = lookupResult.data();
 
-                if (listC == 1) {
-                    scanList = itemList;
+                if (listC == 1 && itemLookupResult != null) {
+                    scanList = itemLookupResult.data();
                 }
 
-                for (Object[] result : scanList) {
-                    int userId = (Integer) result[2];
-                    int rowX = (Integer) result[3];
-                    int rowY = (Integer) result[4];
-                    int rowZ = (Integer) result[5];
-                    int rowWorldId = (Integer) result[10];
+                for (CommonLookupData row : scanList) {
+                    int userId = row.userId();
+                    int rowX = row.x();
+                    int rowY = row.y();
+                    int rowZ = row.z();
+                    int rowWorldId = row.worldId();
                     int chunkX = rowX >> 4;
                     int chunkZ = rowZ >> 4;
-                    long chunkKey = inventoryRollback ? 0 : (chunkX & 0xffffffffL | (chunkZ & 0xffffffffL) << 32);
+                    long chunkKey = inventoryRollback ? 0 : Chunk.getChunkKey(chunkX, chunkZ);
 
                     if (rowWorldId != worldId) {
                         String world = WorldUtils.getWorldName(rowWorldId);
@@ -124,7 +130,7 @@ public class Rollback extends RollbackUtil {
                     if (chunkList.get(chunkKey) == null) {
                         int distance = 0;
                         if (location != null) {
-                            distance = (int) Math.sqrt(Math.pow((Integer) result[3] - location.getBlockX(), 2) + Math.pow((Integer) result[5] - location.getBlockZ(), 2));
+                            distance = (int) Math.sqrt(Math.pow(rowX - location.getBlockX(), 2) + Math.pow(rowZ - location.getBlockZ(), 2));
                         }
 
                         chunkList.put(chunkKey, distance);
@@ -134,7 +140,7 @@ public class Rollback extends RollbackUtil {
                         UserStatement.loadName(statement.getConnection(), userId);
                     }
 
-                    HashMap<Integer, HashMap<Long, ArrayList<Object[]>>> modifyList = dataList;
+                    Map<Integer, Map<Long, List<CommonLookupData>>> modifyList = dataList;
                     if (listC == 1) {
                         modifyList = itemDataList;
                     }
@@ -150,24 +156,24 @@ public class Rollback extends RollbackUtil {
                         itemDataList.get(rowWorldId).put(chunkKey, new ArrayList<>());
                     }
 
-                    modifyList.get(rowWorldId).get(chunkKey).add(result);
+                    modifyList.get(rowWorldId).get(chunkKey).add(row);
                 }
 
                 listC++;
             }
 
             if (rollbackType == 1) { // Restore
-                Iterator<Map.Entry<Integer, HashMap<Long, ArrayList<Object[]>>>> dlIterator = dataList.entrySet().iterator();
+                Iterator<Map.Entry<Integer, Map<Long, List<CommonLookupData>>>> dlIterator = dataList.entrySet().iterator();
                 while (dlIterator.hasNext()) {
-                    for (ArrayList<Object[]> map : dlIterator.next().getValue().values()) {
-                        Collections.reverse(map);
+                    for (List<CommonLookupData> list : dlIterator.next().getValue().values()) {
+                        Collections.reverse(list);
                     }
                 }
 
                 dlIterator = itemDataList.entrySet().iterator();
                 while (dlIterator.hasNext()) {
-                    for (ArrayList<Object[]> map : dlIterator.next().getValue().values()) {
-                        Collections.reverse(map);
+                    for (List<CommonLookupData> list : dlIterator.next().getValue().values()) {
+                        Collections.reverse(list);
                     }
                 }
             }
@@ -177,36 +183,37 @@ public class Rollback extends RollbackUtil {
             if (user != null) {
                 userString = user.getName();
                 if (verbose && preview == 0 && !actionList.contains(11)) {
-                    Integer chunks = chunkList.size();
-                    Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_CHUNKS_FOUND, chunks.toString(), (chunks == 1 ? Selector.FIRST : Selector.SECOND)));
+                    int chunks = chunkList.size();
+                    Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_CHUNKS_FOUND, Integer.toString(chunks), (chunks == 1 ? Selector.FIRST : Selector.SECOND)));
                 }
             }
 
             // Perform update transaction(s) in consumer
             if (preview == 0) {
-                if (actionList.contains(11)) {
-                    List<Object[]> blockList = new ArrayList<>();
-                    List<Object[]> inventoryList = new ArrayList<>();
-                    List<Object[]> containerList = new ArrayList<>();
-                    for (Object[] data : itemList) {
-                        int table = (Integer) data[14];
-                        if (table == 2) { // item
-                            inventoryList.add(data);
-                        }
-                        else if (table == 1) { // container
-                            containerList.add(data);
-                        }
-                        else { // block
-                            blockList.add(data);
-                        }
+                if (actionList.contains(11) && itemLookupResult instanceof CommonLookupResult commonResult) {
+                    List<RollbackRowUpdate> blockList = new ArrayList<>();
+                    List<RollbackRowUpdate> inventoryList = new ArrayList<>();
+                    List<RollbackRowUpdate> containerList = new ArrayList<>();
+
+                    for (CommonLookupData data : commonResult.data()) {
+                        Integer table = data.table();
+
+                        List<RollbackRowUpdate> addTo = switch (table) {
+                            case 2 -> inventoryList;
+                            case 1 -> containerList;
+                            case null, default -> blockList;
+                        };
+
+                        addTo.add(new RollbackRowUpdate(data.rowId(), data.rolledBack()));
                     }
-                    Queue.queueRollbackUpdate(userString, location, inventoryList, Process.INVENTORY_ROLLBACK_UPDATE, rollbackType);
-                    Queue.queueRollbackUpdate(userString, location, containerList, Process.INVENTORY_CONTAINER_ROLLBACK_UPDATE, rollbackType);
-                    Queue.queueRollbackUpdate(userString, location, blockList, Process.BLOCK_INVENTORY_ROLLBACK_UPDATE, rollbackType);
+
+                    Queue.queueRollbackUpdate(userString, inventoryList, Process.INVENTORY_ROLLBACK_UPDATE, rollbackType);
+                    Queue.queueRollbackUpdate(userString, containerList, Process.INVENTORY_CONTAINER_ROLLBACK_UPDATE, rollbackType);
+                    Queue.queueRollbackUpdate(userString, blockList, Process.BLOCK_INVENTORY_ROLLBACK_UPDATE, rollbackType);
                 }
                 else {
-                    Queue.queueRollbackUpdate(userString, location, lookupList, Process.ROLLBACK_UPDATE, rollbackType);
-                    Queue.queueRollbackUpdate(userString, location, itemList, Process.CONTAINER_ROLLBACK_UPDATE, rollbackType);
+                    Queue.queueRollbackUpdate(userString, RollbackRowUpdate.fromResultData(lookupResult.data()), Process.ROLLBACK_UPDATE, rollbackType);
+                    Queue.queueRollbackUpdate(userString, itemLookupResult != null ? RollbackRowUpdate.fromResultData(itemLookupResult.data()) : null, Process.CONTAINER_ROLLBACK_UPDATE, rollbackType);
                 }
             }
 
@@ -251,13 +258,13 @@ public class Rollback extends RollbackUtil {
                     Integer rollbackWorldId = rollbackWorlds.getKey();
                     World bukkitRollbackWorld = rollbackWorlds.getValue();
                     Location chunkLocation = new Location(bukkitRollbackWorld, (finalChunkX << 4), 0, (finalChunkZ << 4));
-                    final HashMap<Long, ArrayList<Object[]>> finalBlockList = dataList.get(rollbackWorldId);
-                    final HashMap<Long, ArrayList<Object[]>> finalItemList = itemDataList.get(rollbackWorldId);
+                    final Map<Long, List<CommonLookupData>> finalBlockList = dataList.get(rollbackWorldId);
+                    final Map<Long, List<CommonLookupData>> finalItemList = itemDataList.get(rollbackWorldId);
 
                     Scheduler.scheduleSyncDelayedTask(CoreProtect.getInstance(), () -> {
                         // Process this chunk using our new RollbackProcessor class
-                        ArrayList<Object[]> blockData = finalBlockList != null ? finalBlockList.getOrDefault(chunkKey, new ArrayList<>()) : new ArrayList<>();
-                        ArrayList<Object[]> itemData = finalItemList != null ? finalItemList.getOrDefault(chunkKey, new ArrayList<>()) : new ArrayList<>();
+                        List<CommonLookupData> blockData = finalBlockList != null ? finalBlockList.getOrDefault(chunkKey, new ArrayList<>()) : new ArrayList<>();
+                        List<CommonLookupData> itemData = finalItemList != null ? finalItemList.getOrDefault(chunkKey, new ArrayList<>()) : new ArrayList<>();
                         RollbackProcessor.processChunk(finalChunkX, finalChunkZ, chunkKey, blockData, itemData, rollbackType, preview, finalUserString, finalUser instanceof Player ? (Player) finalUser : null, bukkitRollbackWorld, inventoryRollback);
                     }, chunkLocation, 0);
                 }
@@ -301,8 +308,8 @@ public class Rollback extends RollbackUtil {
                 ConfigHandler.rollbackHash.put(finalUserString, new int[] { itemCount, blockCount, entityCount, 0, 0 });
 
                 if (verbose && user != null && preview == 0 && !actionList.contains(11)) {
-                    Integer chunks = chunkList.size();
-                    Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_CHUNKS_MODIFIED, chunkCount.toString(), chunks.toString(), (chunks == 1 ? Selector.FIRST : Selector.SECOND)));
+                    int chunks = chunkList.size();
+                    Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.ROLLBACK_CHUNKS_MODIFIED, chunkCount.toString(), Integer.toString(chunks), (chunks == 1 ? Selector.FIRST : Selector.SECOND)));
                 }
             }
 
@@ -321,8 +328,7 @@ public class Rollback extends RollbackUtil {
                 RollbackComplete.output(user, location, checkUsers, restrictList, excludeList, excludeUserList, actionList, timeString, chunkCount, totalSeconds, itemCount, blockCount, entityCount, rollbackType, radius, verbose, restrictWorld, preview);
             }
 
-            list = LookupConverter.convertRawLookup(statement, lookupList);
-            return list;
+            return rawLookupResult;
         }
         catch (Exception e) {
             e.printStackTrace();

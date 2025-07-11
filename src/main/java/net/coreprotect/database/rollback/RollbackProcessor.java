@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 
+import net.coreprotect.data.lookup.type.CommonLookupData;
 import net.coreprotect.utility.serialize.SerializedBlockMeta;
 import net.coreprotect.utility.serialize.SerializedItem;
 import org.bukkit.Bukkit;
@@ -63,15 +64,15 @@ public class RollbackProcessor {
      *            The world to process
      * @return True if successful, false if there was an error
      */
-    public static boolean processChunk(int finalChunkX, int finalChunkZ, long chunkKey, ArrayList<Object[]> blockList, ArrayList<Object[]> itemList, int rollbackType, int preview, String finalUserString, Player finalUser, World bukkitRollbackWorld, boolean inventoryRollback) {
+    public static boolean processChunk(int finalChunkX, int finalChunkZ, long chunkKey, List<CommonLookupData> blockList, List<CommonLookupData> itemList, int rollbackType, int preview, String finalUserString, Player finalUser, World bukkitRollbackWorld, boolean inventoryRollback) {
         try {
             boolean clearInventories = Config.getGlobal().ROLLBACK_ITEMS;
-            ArrayList<Object[]> data = blockList != null ? blockList : new ArrayList<>();
-            ArrayList<Object[]> itemData = itemList != null ? itemList : new ArrayList<>();
+            List<CommonLookupData> data = blockList != null ? blockList : new ArrayList<>();
+            List<CommonLookupData> itemData = itemList != null ? itemList : new ArrayList<>();
             Map<Block, BlockData> chunkChanges = new LinkedHashMap<>();
 
             // Process blocks
-            for (Object[] row : data) {
+            for (CommonLookupData row : data) {
                 int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
                 int[] rollbackHashData = ConfigHandler.rollbackHash.get(finalUserString);
                 int itemCount = rollbackHashData[0];
@@ -79,16 +80,16 @@ public class RollbackProcessor {
                 int entityCount = rollbackHashData[2];
                 int scannedWorlds = rollbackHashData[4];
 
-                int rowX = (Integer) row[3];
-                int rowY = (Integer) row[4];
-                int rowZ = (Integer) row[5];
-                int rowTypeRaw = (Integer) row[6];
-                int rowData = (Integer) row[7];
-                int rowAction = (Integer) row[8];
-                int rowRolledBack = MaterialUtils.rolledBack((Integer) row[9], false);
-                int rowWorldId = (Integer) row[10];
-                String rowMeta = (String) row[12];
-                String rowBlockData = (String) row[13];
+                int rowX = row.x();
+                int rowY = row.y();
+                int rowZ = row.z();
+                int rowTypeRaw = row.type();
+                int rowData = row.data();
+                int rowAction = row.action();
+                int rowRolledBack = MaterialUtils.rolledBack(row.rolledBack(), false);
+                int rowWorldId = row.worldId();
+                String rowMeta = row.metadata();
+                String rowBlockData = row.blockData();
                 String blockDataString = BlockUtils.unpackBlockData(rowBlockData, rowTypeRaw);
                 Material rowType = MaterialUtils.getType(rowTypeRaw);
 
@@ -115,7 +116,7 @@ public class RollbackProcessor {
                     rawBlockData = BlockUtils.createBlockData(rowType);
                 }
 
-                String rowUser = ConfigHandler.playerIdCacheReversed.get((Integer) row[2]);
+                String rowUser = row.playerName();
                 int oldTypeRaw = rowTypeRaw;
                 Material oldTypeMaterial = MaterialUtils.getType(oldTypeRaw);
 
@@ -169,7 +170,7 @@ public class RollbackProcessor {
                     }
                 }
                 else if (rowAction == 3) { // entity kill
-                    entityCount += RollbackEntityHandler.processEntity(row, rollbackType, finalUserString, oldTypeRaw, rowTypeRaw, rowData, rowAction, MaterialUtils.rolledBack((Integer) row[9], false), rowX, rowY, rowZ, rowWorldId, (Integer) row[2], rowUser);
+                    entityCount += RollbackEntityHandler.processEntity(rollbackType, finalUserString, oldTypeRaw, rowTypeRaw, rowData, rowAction, rowRolledBack, rowX, rowY, rowZ, rowWorldId, row.userId(), rowUser);
                 }
                 else {
                     String world = WorldUtils.getWorldName(rowWorldId);
@@ -226,15 +227,14 @@ public class RollbackProcessor {
                     }
 
                     if ((pendingChangeType == Material.WATER) && (rowType != Material.AIR) && (rowType != Material.CAVE_AIR) && blockData != null) {
-                        if (blockData instanceof org.bukkit.block.data.Waterlogged) {
+                        if (blockData instanceof org.bukkit.block.data.Waterlogged waterlogged) {
                             if (Material.WATER.createBlockData().equals(block.getBlockData())) {
-                                org.bukkit.block.data.Waterlogged waterlogged = (org.bukkit.block.data.Waterlogged) blockData;
                                 waterlogged.setWaterlogged(true);
                             }
                         }
                     }
 
-                    if (countBlock && RollbackBlockHandler.processBlockChange(block, row, rollbackType, clearInventories, chunkChanges, countBlock, oldTypeMaterial, pendingChangeType, pendingChangeData, finalUserString, rawBlockData, changeType, changeBlockData, meta, blockData, rowUser, rowType, rowX, rowY, rowZ, rowTypeRaw, rowData, rowAction, rowWorldId, BlockUtils.unpackBlockData((String) row[13], rowTypeRaw))) {
+                    if (countBlock && RollbackBlockHandler.processBlockChange(block, row, rollbackType, clearInventories, chunkChanges, countBlock, oldTypeMaterial, pendingChangeType, pendingChangeData, finalUserString, rawBlockData, changeType, changeBlockData, meta, blockData, rowUser, rowType, rowX, rowY, rowZ, rowTypeRaw, rowData, rowAction, rowWorldId, BlockUtils.unpackBlockData(rowBlockData, rowTypeRaw))) {
                         blockCount++;
                     }
                 }
@@ -257,29 +257,29 @@ public class RollbackProcessor {
             int lastWorldId = 0;
             BlockFace lastFace = null;
 
-            for (Object[] row : itemData) {
+            for (CommonLookupData row : itemData) {
                 int[] rollbackHashData1 = ConfigHandler.rollbackHash.get(finalUserString);
                 int itemCount1 = rollbackHashData1[0];
                 int blockCount1 = rollbackHashData1[1];
                 int entityCount1 = rollbackHashData1[2];
                 int scannedWorlds = rollbackHashData1[4];
-                int rowX = (Integer) row[3];
-                int rowY = (Integer) row[4];
-                int rowZ = (Integer) row[5];
-                int rowTypeRaw = (Integer) row[6];
-                int rowData = (Integer) row[7];
-                int rowAction = (Integer) row[8];
-                int rowRolledBack = MaterialUtils.rolledBack((Integer) row[9], false);
-                int rowWorldId = (Integer) row[10];
-                int rowAmount = (Integer) row[11];
-                String rowMetadata = (String) row[12];
+                int rowX = row.x();
+                int rowY = row.y();
+                int rowZ = row.z();
+                int rowTypeRaw = row.type();
+                int rowData = row.data();
+                int rowAction = row.action();
+                int rowRolledBack = MaterialUtils.rolledBack(row.rolledBack(), false);
+                int rowWorldId = row.worldId();
+                int rowAmount = row.amount();
+                String rowMetadata = row.metadata();
                 Material rowType = MaterialUtils.getType(rowTypeRaw);
 
-                int rolledBackInventory = MaterialUtils.rolledBack((Integer) row[9], true);
+                int rolledBackInventory = MaterialUtils.rolledBack(row.rolledBack(), true);
                 if (rowType != null) {
                     if (inventoryRollback && ((rollbackType == 0 && rolledBackInventory == 0) || (rollbackType == 1 && rolledBackInventory == 1))) {
-                        Material inventoryItem = ItemUtils.itemFilter(rowType, ((Integer) row[14] == 0));
-                        int rowUserId = (Integer) row[2];
+                        Material inventoryItem = ItemUtils.itemFilter(rowType, (row.table() == 0));
+                        int rowUserId = row.userId();
                         String rowUser = ConfigHandler.playerIdCacheReversed.get(rowUserId);
                         if (rowUser == null) {
                             continue;
@@ -335,9 +335,9 @@ public class RollbackProcessor {
                     if ((rollbackType == 0 && rowRolledBack == 0) || (rollbackType == 1 && rowRolledBack == 1)) {
                         SerializedItem item = ItemUtils.deserializeItem(rowMetadata, rowType, rowAmount);
 
-                        BlockFace faceData = item.faceData();
+                        BlockFace faceData = item != null ? item.faceData() : null;
 
-                        if (!containerInit || rowX != lastX || rowY != lastY || rowZ != lastZ || rowWorldId != lastWorldId || !faceData.equals(lastFace)) {
+                        if (!containerInit || rowX != lastX || rowY != lastY || rowZ != lastZ || rowWorldId != lastWorldId || (faceData != null && !faceData.equals(lastFace))) {
                             container = null; // container patch 2.14.0
                             String world = WorldUtils.getWorldName(rowWorldId);
                             if (world.isEmpty()) {
@@ -389,7 +389,7 @@ public class RollbackProcessor {
                             lastFace = faceData;
                         }
 
-                        Integer slot = item.slot();
+                        Integer slot = item != null ? item.slot() : null;
                         if (container != null && slot != null) {
                             int action = 0;
                             if (rollbackType == 0 && rowAction == 0) {

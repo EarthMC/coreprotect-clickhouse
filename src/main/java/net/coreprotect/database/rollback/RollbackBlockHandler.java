@@ -3,6 +3,7 @@ package net.coreprotect.database.rollback;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import net.coreprotect.data.lookup.type.CommonLookupData;
 import net.coreprotect.utility.serialize.SerializedBlockMeta;
 import net.coreprotect.utility.serialize.SerializedItem;
 import org.bukkit.Location;
@@ -109,7 +110,7 @@ public class RollbackBlockHandler extends Queue {
      *            The block data as a string
      * @return Updated count status
      */
-    public static boolean processBlockChange(Block block, Object[] row, int rollbackType, boolean clearInventories, Map<Block, BlockData> chunkChanges, boolean countBlock, Material oldTypeMaterial, Material pendingChangeType, BlockData pendingChangeData, String finalUserString, BlockData rawBlockData, Material changeType, BlockData changeBlockData, SerializedBlockMeta meta, BlockData blockData, String rowUser, Material rowType, int rowX, int rowY, int rowZ, int rowTypeRaw, int rowData, int rowAction, int rowWorldId, String blockDataString) {
+    public static boolean processBlockChange(Block block, CommonLookupData row, int rollbackType, boolean clearInventories, Map<Block, BlockData> chunkChanges, boolean countBlock, Material oldTypeMaterial, Material pendingChangeType, BlockData pendingChangeData, String finalUserString, BlockData rawBlockData, Material changeType, BlockData changeBlockData, SerializedBlockMeta meta, BlockData blockData, String rowUser, Material rowType, int rowX, int rowY, int rowZ, int rowTypeRaw, int rowData, int rowAction, int rowWorldId, String blockDataString) {
 
         boolean changeBlock = true;
         World bukkitWorld = block.getWorld();
@@ -319,7 +320,7 @@ public class RollbackBlockHandler extends Queue {
                 }
                 else if (BukkitAdapter.ADAPTER.isSign(rowType)) {// sign
                     BlockUtils.prepareTypeAndData(chunkChanges, block, rowType, blockData, false);
-                    Queue.queueSignUpdate(rowUser, block.getState(), rollbackType, (Integer) row[1]);
+                    Queue.queueSignUpdate(rowUser, block.getState(), rollbackType, Math.toIntExact(row.time()));
 
                     return countBlock;
                 }
