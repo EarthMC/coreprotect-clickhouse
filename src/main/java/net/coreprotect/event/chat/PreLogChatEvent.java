@@ -24,7 +24,7 @@ public class PreLogChatEvent extends Event implements Cancellable {
 
     @ApiStatus.Internal
     public PreLogChatEvent(AbstractChatEvent event, String messageToLog) {
-        super(true);
+        super(event.isAsynchronous());
         this.event = event;
         this.messageToLog = messageToLog;
         this.chatCancelled = event.isCancelled();
