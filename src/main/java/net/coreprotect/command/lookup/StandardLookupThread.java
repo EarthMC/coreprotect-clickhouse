@@ -215,6 +215,7 @@ public class StandardLookupThread implements Runnable {
                 if (count) {
                     String row_format = NumberFormat.getInstance().format(rows);
                     Chat.sendMessage(player, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.LOOKUP_ROWS_FOUND, row_format, (rows == 1 ? Selector.FIRST : Selector.SECOND)));
+                    return;
                 } else if (pageStart >= rows) {
                     if (rows > 0) {
                         Chat.sendMessage(player, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.NO_RESULTS_PAGE, Selector.FIRST));
