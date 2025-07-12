@@ -38,7 +38,7 @@ class RollbackUpdateProcess {
             tableName = ConfigHandler.prefix + tableName;
 
             // Re-insert the same row with an incremented version
-            try (PreparedStatement preparedStatement = statement.getConnection().prepareStatement("INSERT INTO " + tableName + " SELECT " + rows + " FROM " + tableName + " WHERE rowid = ? LIMIT 1")) {
+            try (PreparedStatement preparedStatement = statement.getConnection().prepareStatement("INSERT INTO " + tableName + " SELECT " + rows + " FROM " + tableName + " WHERE wid = ? AND time = ? AND x = ? AND z = ? AND user = ? AND rowid = ? LIMIT 1")) {
                 long batchCount = 0;
 
                 for (RollbackRowUpdate listRow : list) {
@@ -48,7 +48,12 @@ class RollbackUpdateProcess {
                         int rolledBack = MaterialUtils.toggleRolledBack(rb, (table == 2 || table == 3 || table == 4)); // co_item, co_container, co_block
 
                         preparedStatement.setInt(1, rolledBack);
-                        preparedStatement.setLong(2, rowid);
+                        preparedStatement.setInt(2, listRow.worldId());
+                        preparedStatement.setLong(3, listRow.time());
+                        preparedStatement.setInt(4, listRow.x());
+                        preparedStatement.setInt(5, listRow.z());
+                        preparedStatement.setInt(6, listRow.user());;
+                        preparedStatement.setLong(7, rowid);
                         preparedStatement.addBatch();
 
                         if (++batchCount % 10_000 == 0) {

@@ -204,7 +204,7 @@ public class Rollback extends RollbackUtil {
                             case null, default -> blockList;
                         };
 
-                        addTo.add(new RollbackRowUpdate(data.rowId(), data.rolledBack()));
+                        addTo.add(RollbackRowUpdate.readRow(data));
                     }
 
                     Queue.queueRollbackUpdate(userString, inventoryList, Process.INVENTORY_ROLLBACK_UPDATE, rollbackType);
