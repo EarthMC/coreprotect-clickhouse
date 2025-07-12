@@ -512,7 +512,7 @@ public class ItemUtils {
     @SuppressWarnings("deprecation")
     public static SerializedItem deserializeItem(@Nullable String itemString, @Nullable Material type, int amount) {
         if (itemString == null || itemString.isEmpty() || "{}".equals(itemString) || "0".equals(itemString)) {
-            if (type != null && amount > 0) {
+            if (type != null && amount > 0 && type.isItem()) {
                 return SerializedItem.of(ItemStack.of(type, Math.min(amount, 99)));
             } else {
                 return null;
@@ -524,7 +524,7 @@ public class ItemUtils {
             object = JsonSerialization.DEFAULT_GSON.fromJson(itemString, JsonObject.class);
         } catch (JsonSyntaxException e) {
             CoreProtect.getInstance().getSLF4JLogger().warn("Failed to deserialize an item stack from {}", itemString, e);
-            return type != null ? SerializedItem.of(ItemStack.of(type, Math.min(amount, 99))) : null;
+            return type != null && amount > 0 && type.isItem() ? SerializedItem.of(ItemStack.of(type, Math.min(amount, 99))) : null;
         }
 
         Integer slot = null;
@@ -535,9 +535,12 @@ public class ItemUtils {
         }
 
         if (object.has("co_facing")) {
-            try {
-                faceData = BlockFace.valueOf(object.remove("co_facing").getAsString());
-            } catch (IllegalArgumentException ignored) {}
+            faceData = parseBlockFaceOrNull(object.remove("co_facing").getAsString());
+        }
+
+        if (!object.has("DataVersion")) {
+            // not an item
+            return type != null && amount > 0 && type.isItem() ? new SerializedItem(ItemStack.of(type, Math.min(amount, 99)), slot, faceData) : null;
         }
 
         try {
@@ -546,7 +549,7 @@ public class ItemUtils {
             return new SerializedItem(itemStack, slot, faceData);
         } catch (Exception e) {
             CoreProtect.getInstance().getSLF4JLogger().warn("Failed to deserialize item from json {}", object, e);
-            return type != null ? new SerializedItem(ItemStack.of(type, Math.min(amount, 99)), slot, faceData) : null;
+            return type != null && amount > 0 && type.isItem() ? new SerializedItem(ItemStack.of(type, Math.min(amount, 99)), slot, faceData) : null;
         }
     }
 
