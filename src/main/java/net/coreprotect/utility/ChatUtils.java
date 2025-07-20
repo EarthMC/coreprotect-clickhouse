@@ -17,21 +17,21 @@ public class ChatUtils {
     }
 
     public static String getCoordinates(String command, int worldId, int x, int y, int z, boolean displayWorld, boolean italic) {
-        StringBuilder message = new StringBuilder(Chat.COMPONENT_TAG_OPEN + Chat.COMPONENT_COMMAND);
+        StringBuilder message = new StringBuilder("<click:run_command:");
 
         StringBuilder worldDisplay = new StringBuilder();
         if (displayWorld) {
-            worldDisplay.append("/" + WorldUtils.getWorldName(worldId));
+            worldDisplay.append("/").append(WorldUtils.getWorldName(worldId));
         }
 
         // command
         DecimalFormat decimalFormat = new DecimalFormat("#.##", new DecimalFormatSymbols(Locale.ROOT));
-        message.append("|/" + command + " teleport wid:" + worldId + " " + decimalFormat.format(x + 0.50) + " " + y + " " + decimalFormat.format(z + 0.50) + "|");
+        message.append("'/" + command + " teleport wid:" + worldId + " " + decimalFormat.format(x + 0.50) + " " + y + " " + decimalFormat.format(z + 0.50) + "'>");
 
         // chat output
-        message.append(Color.GREY + (italic ? Color.ITALIC : "") + "(x" + x + "/y" + y + "/z" + z + worldDisplay.toString() + ")");
+        message.append(Color.GREY + (italic ? Color.ITALIC : "") + "(x" + x + "/y" + y + "/z" + z + worldDisplay + ")");
 
-        return message.append(Chat.COMPONENT_TAG_CLOSE).toString();
+        return message.append("</click>").toString();
     }
 
     public static String getPageNavigation(String command, int page, int totalPages) {
@@ -41,23 +41,23 @@ public class ChatUtils {
         String backArrow = "";
         if (page > 1) {
             backArrow = "◀ ";
-            backArrow = Chat.COMPONENT_TAG_OPEN + Chat.COMPONENT_COMMAND + "|/" + command + " l " + (page - 1) + "|" + backArrow + Chat.COMPONENT_TAG_CLOSE;
+            backArrow = "<click:run_command:/" + command + " l " + (page - 1) + ">" + backArrow + "</click>";
         }
 
         // next arrow
         String nextArrow = " ";
         if (page < totalPages) {
             nextArrow = " ▶ ";
-            nextArrow = Chat.COMPONENT_TAG_OPEN + Chat.COMPONENT_COMMAND + "|/" + command + " l " + (page + 1) + "|" + nextArrow + Chat.COMPONENT_TAG_CLOSE;
+            nextArrow = "<click:run_command:/" + command + " l " + (page + 1) + ">" + nextArrow + "</click>";
         }
 
         StringBuilder pagination = new StringBuilder();
         if (totalPages > 1) {
             pagination.append(Color.GREY + "(");
             if (page > 3) {
-                pagination.append(Color.WHITE + Chat.COMPONENT_TAG_OPEN + Chat.COMPONENT_COMMAND + "|/" + command + " l " + 1 + "|" + "1 " + Chat.COMPONENT_TAG_CLOSE);
+                pagination.append(Color.WHITE + "<click:run_command:/" + command + " l " + 1 + ">1</click>");
                 if (page > 4 && totalPages > 7) {
-                    pagination.append(Color.GREY + "... ");
+                    pagination.append(" <click:suggest_command:/" + command + " l >" + Color.GREY + "...</click> ");
                 }
                 else {
                     pagination.append(Color.GREY + "| ");
@@ -99,7 +99,7 @@ public class ChatUtils {
 
             for (int displayPage = displayStart; displayPage <= displayEnd; displayPage++) {
                 if (page != displayPage) {
-                    pagination.append(Color.WHITE + Chat.COMPONENT_TAG_OPEN + Chat.COMPONENT_COMMAND + "|/" + command + " l " + displayPage + "|" + displayPage + (displayPage < totalPages ? " " : "") + Chat.COMPONENT_TAG_CLOSE);
+                    pagination.append(Color.WHITE + "<click:run_command:/" + command + " l " + displayPage + ">" + displayPage + (displayPage < totalPages ? " " : "") + "</click>");
                 }
                 else {
                     pagination.append(Color.WHITE + Color.UNDERLINE + displayPage + Color.RESET + (displayPage < totalPages ? " " : ""));
@@ -111,13 +111,13 @@ public class ChatUtils {
 
             if (displayEnd < totalPages) {
                 if (displayEnd < (totalPages - 1)) {
-                    pagination.append(Color.GREY + "... ");
+                    pagination.append("<click:suggest_command:/" + command + " l >" + Color.GREY + "...</click> ");
                 }
                 else {
                     pagination.append(Color.GREY + "| ");
                 }
                 if (page != totalPages) {
-                    pagination.append(Color.WHITE + Chat.COMPONENT_TAG_OPEN + Chat.COMPONENT_COMMAND + "|/" + command + " l " + totalPages + "|" + totalPages + Chat.COMPONENT_TAG_CLOSE);
+                    pagination.append(Color.WHITE + "<click:run_command:/" + command + " l " + totalPages + ">" + totalPages + "</click>");
                 }
                 else {
                     pagination.append(Color.WHITE + Color.UNDERLINE + totalPages);
@@ -161,7 +161,7 @@ public class ChatUtils {
             Date logDate = new Date(resultTime * 1000L);
             String formattedTimestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").format(logDate);
 
-            return Chat.COMPONENT_TAG_OPEN + Chat.COMPONENT_POPUP + "|" + Color.GREY + formattedTimestamp + "|" + Color.GREY + message.toString() + Chat.COMPONENT_TAG_CLOSE;
+            return "<hover:show_text:'<gray>" + formattedTimestamp + "'><gray>" + message + "</hover>";
         }
 
         return message.toString();
@@ -172,19 +172,6 @@ public class ChatUtils {
             return phrase;
         }
 
-        StringBuilder message = new StringBuilder(Chat.COMPONENT_TAG_OPEN + Chat.COMPONENT_POPUP);
-
-        // tooltip
-        message.append("|" + tooltip.replace("|", Chat.COMPONENT_PIPE) + "|");
-
-        // chat output
-        message.append(phrase);
-
-        return message.append(Chat.COMPONENT_TAG_CLOSE).toString();
-    }
-
-    // This theoretically initializes the component code, to prevent gson adapter errors
-    public static void sendConsoleComponentStartup(ConsoleCommandSender consoleSender, String string) {
-        Chat.sendComponent(consoleSender, Color.RESET + "[CoreProtect] " + string + Chat.COMPONENT_TAG_OPEN + Chat.COMPONENT_POPUP + "| | " + Chat.COMPONENT_TAG_CLOSE);
+        return "<hover:show_text:'" + tooltip + "'>" + phrase + "</hover>";
     }
 } 

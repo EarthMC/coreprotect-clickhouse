@@ -36,10 +36,8 @@ import net.coreprotect.database.Database;
 import net.coreprotect.database.statement.UserStatement;
 import net.coreprotect.language.Phrase;
 import net.coreprotect.listener.ListenerHandler;
-import net.coreprotect.model.BlockGroup;
 import net.coreprotect.paper.PaperAdapter;
 import net.coreprotect.patch.Patch;
-import net.coreprotect.spigot.SpigotAdapter;
 import net.coreprotect.utility.Chat;
 import net.coreprotect.utility.Color;
 import net.coreprotect.utility.SystemUtils;
@@ -69,8 +67,6 @@ public class ConfigHandler extends Queue {
 
     public static HikariDataSource hikariDataSource = null;
     public static final CentralProcessor processorInfo = SystemUtils.getProcessorInfo();
-    public static final boolean isSpigot = VersionUtils.isSpigot();
-    public static final boolean isPaper = VersionUtils.isPaper();
     public static final boolean isFolia = VersionUtils.isFolia();
     public static volatile boolean serverRunning = false;
     public static volatile boolean converterRunning = false;
@@ -399,7 +395,6 @@ public class ConfigHandler extends Queue {
     public static boolean performInitialization(boolean startup) {
         try {
             BukkitAdapter.loadAdapter();
-            SpigotAdapter.loadAdapter();
             PaperAdapter.loadAdapter();
             MaterialParser.loadConfiguredTags(CoreProtect.getInstance());
 

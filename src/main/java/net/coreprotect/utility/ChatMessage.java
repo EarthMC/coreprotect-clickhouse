@@ -1,6 +1,6 @@
 package net.coreprotect.utility;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 
 public class ChatMessage {
 
@@ -104,7 +104,7 @@ public class ChatMessage {
         int indexLast = string.lastIndexOf("\"");
         if (indexFirst > -1 && indexLast > indexFirst) {
             String quoteText = string.substring(indexFirst + 1, indexLast);
-            string = string.replace(quoteText, Color.DARK_AQUA + ChatColor.stripColor(quoteText) + textColor);
+            string = string.replace(quoteText, Color.DARK_AQUA + MiniMessage.miniMessage().stripTags(quoteText) + textColor);
         }
 
         return string;
@@ -116,7 +116,7 @@ public class ChatMessage {
             return result;
         }
 
-        int count = (string.length() - string.replace(String.valueOf(ChatColor.COLOR_CHAR), "").length()) * 2;
+        int count = string.length() * 2;
         int length = (int) ((string.length() - count) * 1.4);
         if (seperatorOffset) {
             length += 2;

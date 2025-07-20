@@ -2,29 +2,30 @@ package net.coreprotect.utility;
 
 import java.util.logging.Level;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Server;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
-import net.coreprotect.spigot.SpigotAdapter;
-
 public final class Chat {
-
-    public static final String COMPONENT_TAG_OPEN = "<COMPONENT>";
-    public static final String COMPONENT_TAG_CLOSE = "</COMPONENT>";
-    public static final String COMPONENT_COMMAND = "COMMAND";
-    public static final String COMPONENT_POPUP = "POPUP";
-    public static final String COMPONENT_PIPE = "<PIPE/>";
 
     private Chat() {
         throw new IllegalStateException("Utility class");
     }
 
     public static void sendComponent(CommandSender sender, String string, String bypass) {
-        SpigotAdapter.ADAPTER.sendComponent(sender, string, bypass);
+        final Component message;
+        if (bypass != null) {
+            message = MiniMessage.miniMessage().deserialize(string + "<extra>", Placeholder.unparsed("extra", bypass));
+        } else {
+            message = MiniMessage.miniMessage().deserialize(string);
+        }
+
+        sender.sendMessage(message);
     }
 
     public static void sendComponent(CommandSender sender, String string) {
@@ -32,11 +33,7 @@ public final class Chat {
     }
 
     public static void sendMessage(CommandSender sender, String message) {
-        if (sender instanceof ConsoleCommandSender) {
-            message = message.replace(Color.DARK_AQUA, ChatColor.DARK_AQUA.toString());
-        }
-
-        sender.sendMessage(message);
+        sendComponent(sender, message);
     }
 
     public static void sendConsoleMessage(String string) {

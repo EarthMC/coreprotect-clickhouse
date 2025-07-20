@@ -1,7 +1,5 @@
 package net.coreprotect.utility;
 
-import org.bukkit.ChatColor;
-
 public final class Color {
 
     // we define our own constants here to eliminate string concatenation
@@ -10,112 +8,112 @@ public final class Color {
     /**
      * Represents black.
      */
-    public static final String BLACK = ChatColor.BLACK.toString();
+    public static final String BLACK = "<black>";
 
     /**
      * Represents dark blue.
      */
-    public static final String DARK_BLUE = ChatColor.DARK_BLUE.toString();
+    public static final String DARK_BLUE = "<dark_blue>";
 
     /**
      * Represents dark green.
      */
-    public static final String DARK_GREEN = ChatColor.DARK_GREEN.toString();
+    public static final String DARK_GREEN = "<dark_green>";
 
     /**
      * Represents dark blue (aqua).
      */
-    public static String DARK_AQUA = ChatColor.DARK_AQUA.toString();
+    public static final String DARK_AQUA = "<#31b0e8>";
 
     /**
      * Represents dark red.
      */
-    public static final String DARK_RED = ChatColor.DARK_RED.toString();
+    public static final String DARK_RED = "<dark_red>";
 
     /**
      * Represents dark purple.
      */
-    public static final String DARK_PURPLE = ChatColor.DARK_PURPLE.toString();
+    public static final String DARK_PURPLE = "<dark_purple>";
 
     /**
      * Represents gold.
      */
-    public static final String GOLD = ChatColor.GOLD.toString();
+    public static final String GOLD = "<gold>";
 
     /**
      * Represents grey.
      */
-    public static final String GREY = ChatColor.GRAY.toString();
+    public static final String GREY = "<gray>";
 
     /**
      * Represents dark grey.
      */
-    public static final String DARK_GREY = ChatColor.DARK_GRAY.toString();
+    public static final String DARK_GREY = "<dark_gray>";
 
     /**
      * Represents blue.
      */
-    public static final String BLUE = ChatColor.BLUE.toString();
+    public static final String BLUE = "<blue>";
 
     /**
      * Represents green.
      */
-    public static final String GREEN = ChatColor.GREEN.toString();
+    public static final String GREEN = "<green>";
 
     /**
      * Represents aqua.
      */
-    public static final String AQUA = ChatColor.AQUA.toString();
+    public static final String AQUA = "<aqua>";
 
     /**
      * Represents red.
      */
-    public static final String RED = ChatColor.RED.toString();
+    public static final String RED = "<red>";
 
     /**
      * Represents light purple.
      */
-    public static final String LIGHT_PURPLE = ChatColor.LIGHT_PURPLE.toString();
+    public static final String LIGHT_PURPLE = "<light_purple>";
 
     /**
      * Represents yellow.
      */
-    public static final String YELLOW = ChatColor.YELLOW.toString();
+    public static final String YELLOW = "<yellow>";
 
     /**
      * Represents white.
      */
-    public static final String WHITE = ChatColor.WHITE.toString();
+    public static final String WHITE = "<white>";
 
     /**
      * Represents magical characters that change around randomly.
      */
-    public static final String MAGIC = ChatColor.COLOR_CHAR + "k";
+    public static final String MAGIC = "<obfuscated>";
 
     /**
      * Makes the text bold.
      */
-    public static final String BOLD = ChatColor.COLOR_CHAR + "l";
+    public static final String BOLD = "<bold>";
 
     /**
      * Makes a line appear through the text.
      */
-    public static final String STRIKETHROUGH = ChatColor.COLOR_CHAR + "m";
+    public static final String STRIKETHROUGH = "<strikethrough>";
 
     /**
      * Makes the text appear underlined.
      */
-    public static final String UNDERLINE = ChatColor.COLOR_CHAR + "n";
+    public static final String UNDERLINE = "<underlined>";
 
     /**
      * Makes the text italic.
      */
-    public static final String ITALIC = ChatColor.COLOR_CHAR + "o";
+    public static final String ITALIC = "<italic>";
 
     /**
      * Resets all previous chat colors or formats.
      */
-    public static final String RESET = ChatColor.COLOR_CHAR + "r";
+    public static final String RESET = "<reset>";
 
     private Color() {
         throw new IllegalStateException("Utility class");

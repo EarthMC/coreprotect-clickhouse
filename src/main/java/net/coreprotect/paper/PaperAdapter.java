@@ -30,9 +30,6 @@ public class PaperAdapter implements PaperInterface {
 
     public static void loadAdapter() {
         int paperVersion = ConfigHandler.SERVER_VERSION;
-        if (!ConfigHandler.isPaper) {
-            paperVersion = PAPER_UNAVAILABLE;
-        }
 
         switch (paperVersion) {
             case PAPER_UNAVAILABLE:
