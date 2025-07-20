@@ -14,48 +14,55 @@ public class ChatUtils {
         throw new IllegalStateException("Utility class");
     }
 
-    public static String getCoordinates(String command, int worldId, int x, int y, int z, boolean displayWorld, boolean italic) {
-        StringBuilder message = new StringBuilder("<click:run_command:");
+    public static String getCoordinates(String usedCommand, int worldId, int x, int y, int z, boolean displayWorld, boolean italic) {
+        StringBuilder message = new StringBuilder("<hover:show_text:");
 
         StringBuilder worldDisplay = new StringBuilder();
         if (displayWorld) {
             worldDisplay.append("/").append(WorldUtils.getWorldName(worldId));
         }
 
+        message.append("'/" + usedCommand + " teleport " + WorldUtils.getWorldName(worldId) + " " + x + " " + y + " " + z + "'");
+        message.append(">");
+
         // command
         DecimalFormat decimalFormat = new DecimalFormat("#.##", new DecimalFormatSymbols(Locale.ROOT));
-        message.append("'/" + command + " teleport wid:" + worldId + " " + decimalFormat.format(x + 0.50) + " " + y + " " + decimalFormat.format(z + 0.50) + "'>");
+        final String command = "'/" + usedCommand + " teleport wid:" + worldId + " " + decimalFormat.format(x + 0.50) + " " + y + " " + decimalFormat.format(z + 0.50) + "'";
+
+        message.append("<click:run_command:").append(command).append(">");
 
         // chat output
         message.append(Color.GREY + (italic ? Color.ITALIC : "") + "(x" + x + "/y" + y + "/z" + z + worldDisplay + ")");
 
-        return message.append("</click>").toString();
+        return message.append("</click></hover>").toString();
     }
 
-    public static String getPageNavigation(String command, int page, int totalPages) {
+    public static String getPageNavigation(String usedCommand, int page, int totalPages) {
         StringBuilder message = new StringBuilder();
 
         // back arrow
         String backArrow = "";
         if (page > 1) {
             backArrow = "◀ ";
-            backArrow = "<click:run_command:/" + command + " l " + (page - 1) + ">" + backArrow + "</click>";
+            final String command = "/" + usedCommand + " l " + (page - 1);
+            backArrow = "<hover:show_text:'" + command + "'><click:run_command:" + command + ">" + backArrow + "</click></hover>";
         }
 
         // next arrow
         String nextArrow = " ";
         if (page < totalPages) {
             nextArrow = " ▶ ";
-            nextArrow = "<click:run_command:/" + command + " l " + (page + 1) + ">" + nextArrow + "</click>";
+            final String command = "/" + usedCommand + " l " + (page + 1);
+            nextArrow = "<hover:show_text:'" + command + "'><click:run_command:" + command + ">" + nextArrow + "</click></hover>";
         }
 
         StringBuilder pagination = new StringBuilder();
         if (totalPages > 1) {
             pagination.append(Color.GREY + "(");
             if (page > 3) {
-                pagination.append(Color.WHITE + "<click:run_command:/" + command + " l " + 1 + ">1</click>");
+                pagination.append(Color.WHITE + "<hover:show_text:'/" + usedCommand + " l 1'><click:run_command:/" + usedCommand + " l 1>1</click></hover> ");
                 if (page > 4 && totalPages > 7) {
-                    pagination.append(" <click:suggest_command:/" + command + " l >" + Color.GREY + "...</click> ");
+                    pagination.append("<hover:show_text:'/" + usedCommand + " l <page>'><click:suggest_command:/" + usedCommand + " l >" + Color.GREY + "...</click></hover> ");
                 }
                 else {
                     pagination.append(Color.GREY + "| ");
@@ -97,7 +104,8 @@ public class ChatUtils {
 
             for (int displayPage = displayStart; displayPage <= displayEnd; displayPage++) {
                 if (page != displayPage) {
-                    pagination.append(Color.WHITE + "<click:run_command:/" + command + " l " + displayPage + ">" + displayPage + (displayPage < totalPages ? " " : "") + "</click>");
+                    final String command = "/" + usedCommand + " l " + displayPage;
+                    pagination.append(Color.WHITE + "<hover:show_text:'" + command + "'><click:run_command:'" + command + "'>" + displayPage + (displayPage < totalPages ? " " : "") + "</click></hover>");
                 }
                 else {
                     pagination.append(Color.WHITE + Color.UNDERLINE + displayPage + Color.RESET + (displayPage < totalPages ? " " : ""));
@@ -109,13 +117,14 @@ public class ChatUtils {
 
             if (displayEnd < totalPages) {
                 if (displayEnd < (totalPages - 1)) {
-                    pagination.append("<click:suggest_command:/" + command + " l >" + Color.GREY + "...</click> ");
+                    pagination.append("<hover:show_text:'/" + usedCommand + " l <page>'><click:suggest_command:/" + usedCommand + " l >" + Color.GREY + "...</click></hover> ");
                 }
                 else {
                     pagination.append(Color.GREY + "| ");
                 }
                 if (page != totalPages) {
-                    pagination.append(Color.WHITE + "<click:run_command:/" + command + " l " + totalPages + ">" + totalPages + "</click>");
+                    final String command = "/" + usedCommand + " l " + totalPages;
+                    pagination.append(Color.WHITE + "<hover:show_text:'" + command + "'><click:run_command:" + command + ">" + totalPages + "</click></hover>");
                 }
                 else {
                     pagination.append(Color.WHITE + Color.UNDERLINE + totalPages);

@@ -243,7 +243,7 @@ public class StandardLookupThread implements Runnable {
                         for (SessionLookupData data : sessionResult.data()) {
                             String timeAgo = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true);
                             int timeLength = 50 + (ChatUtils.getTimeSince(data.time(), currentUnixSeconds, false).replaceAll("[^0-9]", "").length() * 6);
-                            String leftPadding = Color.BOLD + Strings.padStart("", 10, ' ');
+                            String leftPadding = Strings.padStart("", 10, ' ');
 
                             if (timeLength % 4 == 0) {
                                 leftPadding = Strings.padStart("", timeLength / 4, ' ');
@@ -272,7 +272,7 @@ public class StandardLookupThread implements Runnable {
                         for (SignLookupData data : signResult.data()) {
                             String timeAgo = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true);
                             int timeLength = 50 + (ChatUtils.getTimeSince(data.time(), currentUnixSeconds, false).replaceAll("[^0-9]", "").length() * 6);
-                            String leftPadding = Color.BOLD + Strings.padStart("", 10, ' ');
+                            String leftPadding = Strings.padStart("", 10, ' ');
                             if (timeLength % 4 == 0) {
                                 leftPadding = Strings.padStart("", timeLength / 4, ' ');
                             } else {
@@ -349,7 +349,7 @@ public class StandardLookupThread implements Runnable {
 
                                 String timeago = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true);
                                 int timeLength = 50 + (ChatUtils.getTimeSince(data.time(), currentUnixSeconds, false).replaceAll("[^0-9]", "").length() * 6);
-                                String leftPadding = Color.BOLD + Strings.padStart("", 10, ' ');
+                                String leftPadding = Strings.padStart("", 10, ' ');
                                 if (timeLength % 4 == 0) {
                                     leftPadding = Strings.padStart("", timeLength / 4, ' ');
                                 } else {
