@@ -565,7 +565,7 @@ public class LookupRaw extends Queue {
             String baseQuery = ((!includeEntity.isEmpty() || !excludeEntity.isEmpty()) ? queryEntity : queryBlock);
             if (limitOffset > -1 && limitCount > -1) {
                 queryLimit = " LIMIT " + limitCount;
-                unionLimit = countRows ? "" : (" ORDER BY time DESC LIMIT " + limitCount + " OFFSET " + limitOffset); // Do not add limits inside unions when rows need to be counted, otherwise the count breaks
+                unionLimit = countRows ? "" : (" ORDER BY time DESC LIMIT " + (limitCount + limitOffset)); // Do not add limits inside unions when rows need to be counted, otherwise the count breaks
                 queryLimitOffset = queryLimit + (limitOffset > 0 ? (" OFFSET " + limitOffset) : "");
             }
 
