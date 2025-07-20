@@ -301,7 +301,7 @@ public class StandardLookupThread implements Runnable {
                                 Material blockType = ItemUtils.itemFilter(MaterialUtils.getType(dtype), data.table() == 0);
                                 String dname = StringUtils.nameFilter(blockType.name().toLowerCase(Locale.ROOT), ddata);
                                 String itemData = data.metadata();
-                                String tooltip = ItemUtils.getEnchantments(itemData, dtype, amount);
+                                String hover = ItemUtils.getItemHover(itemData, dtype, amount);
 
                                 String selector = Selector.FIRST;
                                 String tag = Color.WHITE + "-";
@@ -325,7 +325,7 @@ public class StandardLookupThread implements Runnable {
                                     tag = (daction == 0 ? Color.GREEN + "+" : Color.RED + "-");
                                 }
 
-                                Chat.sendComponent(player, timeAgo + " " + tag + " " + Phrase.build(Phrase.LOOKUP_CONTAINER, Color.DARK_AQUA + rollbackDecoration + dplayer + Color.WHITE + rollbackDecoration, "x" + amount, ChatUtils.createTooltip(Color.DARK_AQUA + rollbackDecoration + dname, tooltip) + Color.WHITE, selector));
+                                Chat.sendComponent(player, timeAgo + " " + tag + " " + Phrase.build(Phrase.LOOKUP_CONTAINER, Color.DARK_AQUA + rollbackDecoration + dplayer + Color.WHITE + rollbackDecoration, "x" + amount, ItemUtils.createItemTooltip(Color.DARK_AQUA + rollbackDecoration + dname, hover) + Color.WHITE, selector));
                                 PluginChannelListener.getInstance().sendData(player, data.time(), Phrase.LOOKUP_CONTAINER, selector, dplayer, dname, amount, dataX, dataY, dataZ, wid, rollbackDecoration, true, tag.contains("+"));
                             }
                         } else {
@@ -392,7 +392,7 @@ public class StandardLookupThread implements Runnable {
                                 String action = "a:block";
                                 if (actions.contains(4) || actions.contains(5) || actions.contains(11) || amount > -1) {
                                     String itemData = data.metadata();
-                                    String tooltip = ItemUtils.getEnchantments(itemData, dtype, amount);
+                                    String hover = ItemUtils.getItemHover(itemData, dtype, amount);
 
                                     if (daction == 2 || daction == 3) {
                                         phrase = Phrase.LOOKUP_ITEM; // {picked up|dropped}
@@ -416,7 +416,7 @@ public class StandardLookupThread implements Runnable {
                                         action = "a:container";
                                     }
 
-                                    Chat.sendComponent(player, timeago + " " + tag + " " + Phrase.build(phrase, Color.DARK_AQUA + rollbackDecoration + dplayer + Color.WHITE + rollbackDecoration, "x" + amount, ChatUtils.createTooltip(Color.DARK_AQUA + rollbackDecoration + dname, tooltip) + Color.WHITE, selector));
+                                    Chat.sendComponent(player, timeago + " " + tag + " " + Phrase.build(phrase, Color.DARK_AQUA + rollbackDecoration + dplayer + Color.WHITE + rollbackDecoration, "x" + amount, ItemUtils.createItemTooltip(Color.DARK_AQUA + rollbackDecoration + dname, hover) + Color.WHITE, selector));
                                     PluginChannelListener.getInstance().sendData(player, data.time(), phrase, selector, dplayer, dname, (tag.contains("+") ? 1 : -1), dataX, dataY, dataZ, worldId, rollbackDecoration, action.contains("container"), tag.contains("+"));
                                 } else {
                                     if (daction == 2 || daction == 3) {

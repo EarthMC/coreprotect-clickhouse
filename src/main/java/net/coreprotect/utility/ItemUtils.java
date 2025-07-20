@@ -13,6 +13,8 @@ import com.google.gson.JsonSyntaxException;
 import net.coreprotect.CoreProtect;
 import net.coreprotect.utility.serialize.JsonSerialization;
 import net.coreprotect.utility.serialize.SerializedItem;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -411,6 +413,29 @@ public class ItemUtils {
         }
 
         return message.toString();
+    }
+
+    public static String getItemHover(String itemData, int type, int amount) {
+        if (itemData == null || itemData.isEmpty()) {
+            return "";
+        }
+
+        final SerializedItem serializedItem = deserializeItem(itemData, MaterialUtils.getType(type), amount);
+        if (serializedItem == null || serializedItem.itemStack() == null) {
+            return "";
+        }
+
+        // Returns a string like <hover:show_item:...>
+        return MiniMessage.miniMessage().serialize(Component.text().hoverEvent(serializedItem.itemStack()).build());
+    }
+
+    public static String createItemTooltip(String phrase, String hover) {
+        if (hover.isEmpty()) {
+            return phrase;
+        }
+
+        // The opening tag is already included as part of the hover string, so we only need to close it.
+        return hover + phrase + "</hover>";
     }
     
     public static Map<Integer, Object> serializeItemStackLegacy(ItemStack itemStack, String faceData, int slot) {

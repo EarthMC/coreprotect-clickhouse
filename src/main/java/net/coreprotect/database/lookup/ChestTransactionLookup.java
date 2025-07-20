@@ -78,7 +78,7 @@ public class ChestTransactionLookup {
                     int resultAmount = results.getInt("amount");
                     int resultRolledBack = results.getInt("rolled_back");
                     String resultMetadata = results.getString("metadata");
-                    String tooltip = ItemUtils.getEnchantments(resultMetadata, resultType, resultAmount);
+                    String hover = ItemUtils.getItemHover(resultMetadata, resultType, resultAmount);
 
                     if (ConfigHandler.playerIdCacheReversed.get(resultUserId) == null) {
                         UserStatement.loadName(statement.getConnection(), resultUserId);
@@ -114,7 +114,7 @@ public class ChestTransactionLookup {
                         target = target.split(":")[1];
                     }
 
-                    result.add(timeAgo + " " + tag + " " + Phrase.build(Phrase.LOOKUP_CONTAINER, Color.DARK_AQUA + rbFormat + resultUser + Color.WHITE + rbFormat, "x" + resultAmount, ChatUtils.createTooltip(Color.DARK_AQUA + rbFormat + target, tooltip) + Color.WHITE, selector));
+                    result.add(timeAgo + " " + tag + " " + Phrase.build(Phrase.LOOKUP_CONTAINER, Color.DARK_AQUA + rbFormat + resultUser + Color.WHITE + rbFormat, "x" + resultAmount, ItemUtils.createItemTooltip(Color.DARK_AQUA + rbFormat + target, hover) + Color.WHITE, selector));
                     PluginChannelListener.getInstance().sendData(commandSender, resultTime, Phrase.LOOKUP_CONTAINER, selector, resultUser, target, resultAmount, x, y, z, worldId, rbFormat, true, tag.contains("+"));
                 }
             }

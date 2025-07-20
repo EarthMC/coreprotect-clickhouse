@@ -6,8 +6,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import org.bukkit.command.ConsoleCommandSender;
-
 import net.coreprotect.language.Phrase;
 
 public class ChatUtils {
@@ -165,13 +163,5 @@ public class ChatUtils {
         }
 
         return message.toString();
-    }
-
-    public static String createTooltip(String phrase, String tooltip) {
-        if (tooltip.isEmpty()) {
-            return phrase;
-        }
-
-        return "<hover:show_text:'" + tooltip + "'>" + phrase + "</hover>";
     }
 } 
