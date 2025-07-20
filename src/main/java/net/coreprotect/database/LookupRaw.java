@@ -600,7 +600,7 @@ public class LookupRaw extends Queue {
             }
             else if (actionList.contains(11)) {
                 queryTable = "item";
-                rows = "rowid as id,time,user,wid,x,y,z,type,toString(data) as metadata,'0' as data,amount,action,0 as rolled_back,version";
+                rows = "rowid as id,time,user,wid,x,y,z,type,toString(" + ConfigHandler.prefix + "item.data) as metadata,'0' as data,amount,action,0 as rolled_back,version";
             }
 
             String unionSelect = "SELECT * FROM (";
@@ -634,7 +634,7 @@ public class LookupRaw extends Queue {
                 rows = "rowid as id,time,user,wid,x,y,z,type,toString(metadata) as metadata,toString(data) as data,amount,action,rolled_back,version";
                 query = query + unionSelect + "SELECT " + "'1' as tbl," + rows + " FROM " + ConfigHandler.prefix + "container WHERE" + queryBlock + unionLimit + ") UNION ALL ";
 
-                rows = "rowid as id,time,user,wid,x,y,z,type,toString(data) as metadata,'0' as data,amount,action,rolled_back,version";
+                rows = "rowid as id,time,user,wid,x,y,z,type,toString(" + ConfigHandler.prefix + "item.data) as metadata,'0' as data,amount,action,rolled_back,version";
                 queryOrder = " ORDER BY time DESC, tbl DESC, id DESC";
 
                 if (!actionExclude.isEmpty()) {
