@@ -9,7 +9,6 @@ import java.util.Map;
 import net.coreprotect.data.lookup.LookupResult;
 import net.coreprotect.data.lookup.result.CommonLookupResult;
 import net.coreprotect.data.lookup.type.CommonLookupData;
-import net.coreprotect.data.rollback.RollbackRowUpdate;
 import net.coreprotect.utility.serialize.SerializedItem;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -56,7 +55,7 @@ public class ContainerRollback extends Rollback {
                 userString = user.getName();
             }
 
-            Queue.queueRollbackUpdate(userString, RollbackRowUpdate.fromResultData(lookupResult.data()), Process.CONTAINER_ROLLBACK_UPDATE, rollbackType); // Perform update transaction in consumer
+            Queue.queueRollbackUpdate(userString, lookupResult.data(), Process.CONTAINER_ROLLBACK_UPDATE, rollbackType); // Perform update transaction in consumer
 
             final String finalUserString = userString;
             ConfigHandler.rollbackHash.put(userString, new int[] { 0, 0, 0, 0, 0 });

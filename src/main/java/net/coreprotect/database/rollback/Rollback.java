@@ -14,7 +14,6 @@ import java.util.TreeMap;
 import net.coreprotect.data.lookup.LookupResult;
 import net.coreprotect.data.lookup.result.CommonLookupResult;
 import net.coreprotect.data.lookup.type.CommonLookupData;
-import net.coreprotect.data.rollback.RollbackRowUpdate;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
@@ -191,20 +190,20 @@ public class Rollback extends RollbackUtil {
             // Perform update transaction(s) in consumer
             if (preview == 0) {
                 if (actionList.contains(11) && itemLookupResult instanceof CommonLookupResult commonResult) {
-                    List<RollbackRowUpdate> blockList = new ArrayList<>();
-                    List<RollbackRowUpdate> inventoryList = new ArrayList<>();
-                    List<RollbackRowUpdate> containerList = new ArrayList<>();
+                    List<CommonLookupData> blockList = new ArrayList<>();
+                    List<CommonLookupData> inventoryList = new ArrayList<>();
+                    List<CommonLookupData> containerList = new ArrayList<>();
 
                     for (CommonLookupData data : commonResult.data()) {
                         Integer table = data.table();
 
-                        List<RollbackRowUpdate> addTo = switch (table) {
+                        List<CommonLookupData> addTo = switch (table) {
                             case 2 -> inventoryList;
                             case 1 -> containerList;
                             case null, default -> blockList;
                         };
 
-                        addTo.add(RollbackRowUpdate.readRow(data));
+                        addTo.add(data);
                     }
 
                     Queue.queueRollbackUpdate(userString, inventoryList, Process.INVENTORY_ROLLBACK_UPDATE, rollbackType);
@@ -212,8 +211,8 @@ public class Rollback extends RollbackUtil {
                     Queue.queueRollbackUpdate(userString, blockList, Process.BLOCK_INVENTORY_ROLLBACK_UPDATE, rollbackType);
                 }
                 else {
-                    Queue.queueRollbackUpdate(userString, RollbackRowUpdate.fromResultData(lookupResult.data()), Process.ROLLBACK_UPDATE, rollbackType);
-                    Queue.queueRollbackUpdate(userString, itemLookupResult != null ? RollbackRowUpdate.fromResultData(itemLookupResult.data()) : null, Process.CONTAINER_ROLLBACK_UPDATE, rollbackType);
+                    Queue.queueRollbackUpdate(userString, lookupResult.data(), Process.ROLLBACK_UPDATE, rollbackType);
+                    Queue.queueRollbackUpdate(userString, itemLookupResult != null ? itemLookupResult.data() : null, Process.CONTAINER_ROLLBACK_UPDATE, rollbackType);
                 }
             }
 

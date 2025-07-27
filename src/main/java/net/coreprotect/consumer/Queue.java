@@ -3,7 +3,7 @@ package net.coreprotect.consumer;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.coreprotect.data.rollback.RollbackRowUpdate;
+import net.coreprotect.data.lookup.type.CommonLookupData;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -340,7 +340,7 @@ public class Queue {
         queueStandardData(consumerId, currentConsumer, new String[] { player.getName(), null }, player.getLocation().clone());
     }
 
-    protected static void queueRollbackUpdate(String user, List<RollbackRowUpdate> lookup, int table, int action) {
+    protected static void queueRollbackUpdate(String user, List<CommonLookupData> lookup, int table, int action) {
         if (lookup == null || lookup.isEmpty()) {
             return;
         }
