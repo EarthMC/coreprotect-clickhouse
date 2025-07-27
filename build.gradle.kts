@@ -55,9 +55,14 @@ tasks {
     shadowJar {
         archiveClassifier.set(libs.versions.minecraft)
 
-        relocate("org.bstats", "net.coreprotect.libs.bstats")
-        relocate("com.zaxxer.hikari", "net.coreprotect.libs.hikaricp")
-        relocate("com.clickhouse", "net.coreprotect.libs.clickhouse")
+        // automatically disable relocations when running via debugger
+        val disableRelocation = project.hasProperty("idea.debugger.dispatch.addr") || project.hasProperty("disableRelocation")
+
+        if (!disableRelocation) {
+            relocate("org.bstats", "net.coreprotect.libs.bstats")
+            relocate("com.zaxxer.hikari", "net.coreprotect.libs.hikaricp")
+            relocate("com.clickhouse", "net.coreprotect.libs.clickhouse")
+        }
 
         dependencies {
             exclude(dependency("com.google.code.gson:.*"))
@@ -86,6 +91,15 @@ tasks {
     test {
         useJUnitPlatform()
     }
+}
+
+tasks.withType(xyz.jpenilla.runtask.task.AbstractRun::class) {
+    javaLauncher = javaToolchains.launcherFor {
+        @Suppress("UnstableApiUsage")
+        vendor = JvmVendorSpec.JETBRAINS
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    jvmArgs("-XX:+AllowEnhancedClassRedefinition")
 }
 
 publishing {
