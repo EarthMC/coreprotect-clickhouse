@@ -148,6 +148,7 @@ public class Consumer extends Process implements Runnable, Thread.UncaughtExcept
     public static void startConsumer() {
         if (!isRunning()) {
             consumerThread = new Thread(new Consumer());
+            consumerThread.setName("CoreProtect Consumer Thread");
             consumerThread.setUncaughtExceptionHandler(new Consumer());
             consumerThread.start();
         }

@@ -145,6 +145,7 @@ public class PluginInitializationService {
 
         // Start cache cleanup thread
         Thread cacheCleanUpThread = new Thread(new CacheHandler());
+        cacheCleanUpThread.setName("CoreProtect Cache Cleaner Thread");
         cacheCleanUpThread.start();
 
         // Start consumer
