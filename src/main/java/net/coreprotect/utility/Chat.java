@@ -20,7 +20,7 @@ public final class Chat {
     public static void sendComponent(CommandSender sender, String string, String bypass) {
         final Component message;
         if (bypass != null) {
-            message = MiniMessage.miniMessage().deserialize(string + "<extra>", Placeholder.unparsed("extra", bypass));
+            message = MiniMessage.miniMessage().deserialize(string + (!string.contains("<extra>") ? "<extra>" : ""), Placeholder.unparsed("extra", bypass));
         } else {
             message = MiniMessage.miniMessage().deserialize(string);
         }

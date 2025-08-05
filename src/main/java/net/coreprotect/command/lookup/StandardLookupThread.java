@@ -233,7 +233,7 @@ public class StandardLookupThread implements Runnable {
                             String timeAgo = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true);
                             final String dash = data.cancelled() ? Color.RED + "<hover:show_text:'This message was cancelled and was not sent'>-</hover>" : Color.WHITE + "-";
 
-                            Chat.sendComponent(player, timeAgo + " " + dash + " " + Color.DARK_AQUA + data.playerName() + ": " + Color.WHITE, data.message());
+                            Chat.sendComponent(player, timeAgo + " " + dash + " " + Color.DARK_AQUA + data.playerName() + ": " + Color.WHITE + ChatUtils.formatHoverCoordinates(command.getName(), data.worldId(), data.x(), data.y(), data.z()), data.message());
                             if (PluginChannelHandshakeListener.getInstance().isPluginChannelPlayer(player)) {
                                 PluginChannelListener.getInstance().sendMessageData(player, data.time(), data.playerName(), data.message(), false, data.x(), data.y(), data.z(), data.worldId());
                             }
