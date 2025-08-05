@@ -17,11 +17,12 @@ class PlayerCommandProcess {
 
         if (data[1] instanceof Location location) {
             Map<Integer, String> strings = Consumer.consumerStrings.get(processId);
-            if (strings.get(id) != null) {
-                String message = strings.get(id);
+            final String message = strings.remove(id);
+
+            if (message != null) {
                 Long timestamp = (Long) data[0];
-                CommandLogger.log(preparedStmt, batchCount, timestamp, location, user, message);
-                strings.remove(id);
+                boolean cancelled = (boolean) data[2];
+                CommandLogger.log(preparedStmt, batchCount, timestamp, location, user, message, cancelled);
             }
         }
     }

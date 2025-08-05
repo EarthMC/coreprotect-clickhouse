@@ -3,6 +3,9 @@ package net.coreprotect.patch.script;
 import net.coreprotect.CoreProtect;
 import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
+import net.coreprotect.language.Phrase;
+import net.coreprotect.language.Selector;
+import net.coreprotect.utility.Chat;
 import org.slf4j.Logger;
 
 import java.sql.SQLException;
@@ -11,6 +14,13 @@ import java.util.List;
 
 public class __22_4_2 {
     protected static boolean patch(Statement statement) {
+        try {
+            statement.executeUpdate("alter table " + ConfigHandler.prefix + "command add column cancelled Bool;");
+        } catch (SQLException e) {
+            Chat.console(Phrase.build(Phrase.PATCH_SKIP_UPDATE, ConfigHandler.prefix + "command", Selector.FIRST, Selector.FIRST));
+            CoreProtect.getInstance().getSLF4JLogger().warn("Exception while adding 'cancelled' column to command table", e);
+        }
+
         // Re-create the block, item and container tables in order to change the order by to add the y coordinate to it
 
         final Logger logger = CoreProtect.getInstance().getSLF4JLogger();

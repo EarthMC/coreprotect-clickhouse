@@ -75,10 +75,7 @@ public class LookupRaw extends Queue {
                     int resultY = results.getInt("y");
                     int resultZ = results.getInt("z");
 
-                    boolean cancelled = false;
-                    if (isChat) {
-                        cancelled = results.getBoolean("cancelled");
-                    }
+                    boolean cancelled = results.getBoolean("cancelled");
 
                     data.add(new ChatLookupData(resultId, resultTime, resultUserId, resultMessage, cancelled, resultWorldId, resultX, resultY, resultZ));
                 }
@@ -577,14 +574,8 @@ public class LookupRaw extends Queue {
                 rows = "rowid as id,time,user,wid,x,y,z,action,type,toString(data) as data,rolled_back,amount,toString(metadata) as metadata,version";
             }
             else if (actionList.contains(6) || actionList.contains(7)) {
-                queryTable = "chat";
-                rows = "rowid as id,time,user,message,wid,x,y,z";
-
-                if (actionList.contains(7)) {
-                    queryTable = "command";
-                } else {
-                    rows += ",cancelled";
-                }
+                queryTable = actionList.contains(7) ? "command" : "chat";
+                rows = "rowid as id,time,user,message,wid,x,y,z,cancelled";
             }
             else if (actionList.contains(8)) {
                 queryTable = "session";

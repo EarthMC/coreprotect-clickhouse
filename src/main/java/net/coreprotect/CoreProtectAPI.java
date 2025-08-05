@@ -253,7 +253,7 @@ public class CoreProtectAPI extends Queue {
         }
 
         long timestamp = System.currentTimeMillis() / 1000L;
-        Queue.queuePlayerCommand(player, command, timestamp);
+        Queue.queuePlayerCommand(player, command, timestamp, false);
         return true;
     }
 

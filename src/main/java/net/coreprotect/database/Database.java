@@ -56,7 +56,7 @@ public class Database extends Queue {
         SQL_QUERIES.put(ITEM, "INSERT INTO %sprefix%item (time, user, wid, x, y, z, type, data, amount, action, rolled_back, rowid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         SQL_QUERIES.put(WORLD, "INSERT INTO %sprefix%world (id, world, rowid) VALUES (?, ?, ?)");
         SQL_QUERIES.put(CHAT, "INSERT INTO %sprefix%chat (time, user, wid, x, y, z, message, cancelled, rowid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-        SQL_QUERIES.put(COMMAND, "INSERT INTO %sprefix%command (time, user, wid, x, y, z, message, rowid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        SQL_QUERIES.put(COMMAND, "INSERT INTO %sprefix%command (time, user, wid, x, y, z, message, cancelled, rowid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
         SQL_QUERIES.put(SESSION, "INSERT INTO %sprefix%session (time, user, wid, x, y, z, action, rowid) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
         SQL_QUERIES.put(ENTITY, "INSERT INTO %sprefix%entity (time, data, rowid) VALUES (?, ?, ?)");
         SQL_QUERIES.put(MATERIAL, "INSERT INTO %sprefix%material_map (id, material, rowid) VALUES (?, ?, ?)");
@@ -298,7 +298,7 @@ public class Database extends Queue {
 
         // Command
         orderBy = "ORDER BY (user, time, wid, x, z)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "command(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int16, z Int32, message String) ENGINE = MergeTree " + orderBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "command(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int16, z Int32, message String, cancelled Bool) ENGINE = MergeTree " + orderBy);
 
         // Container
         orderBy = "ORDER BY (wid, y, x, z, time, user, type)";

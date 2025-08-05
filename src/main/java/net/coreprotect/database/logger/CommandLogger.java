@@ -19,7 +19,7 @@ public class CommandLogger {
         throw new IllegalStateException("Database class");
     }
 
-    public static void log(PreparedStatement preparedStmt, int batchCount, long time, Location location, String user, String message) {
+    public static void log(PreparedStatement preparedStmt, int batchCount, long time, Location location, String user, String message, boolean cancelled) {
         try {
             if (ConfigHandler.blacklist.get(user.toLowerCase(Locale.ROOT)) != null) {
                 return;
@@ -35,7 +35,7 @@ public class CommandLogger {
             int x = location.getBlockX();
             int y = location.getBlockY();
             int z = location.getBlockZ();
-            CommandStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, message);
+            CommandStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, message, cancelled);
         }
         catch (Exception e) {
             e.printStackTrace();

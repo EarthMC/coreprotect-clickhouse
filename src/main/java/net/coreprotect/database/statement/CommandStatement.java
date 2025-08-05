@@ -10,7 +10,7 @@ public class CommandStatement {
         throw new IllegalStateException("Database class");
     }
 
-    public static void insert(PreparedStatement preparedStmt, int batchCount, long time, int user, int wid, int x, int y, int z, String message) {
+    public static void insert(PreparedStatement preparedStmt, int batchCount, long time, int user, int wid, int x, int y, int z, String message, boolean cancelled) {
         try {
             preparedStmt.setLong(1, time);
             preparedStmt.setInt(2, user);
@@ -19,7 +19,8 @@ public class CommandStatement {
             preparedStmt.setInt(5, y);
             preparedStmt.setInt(6, z);
             preparedStmt.setString(7, message);
-            preparedStmt.setInt(8, CoreProtect.getInstance().rowNumbers().nextRowId("command", preparedStmt.getConnection()));
+            preparedStmt.setBoolean(8, cancelled);
+            preparedStmt.setInt(9, CoreProtect.getInstance().rowNumbers().nextRowId("command", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % 1000 == 0) {

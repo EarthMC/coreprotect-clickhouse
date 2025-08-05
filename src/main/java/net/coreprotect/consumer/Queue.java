@@ -302,12 +302,12 @@ public class Queue {
         queueStandardData(consumerId, currentConsumer, new String[] { player.getName(), null }, new Object[] { timestamp, player.getLocation().clone(), cancelled });
     }
 
-    protected static void queuePlayerCommand(Player player, String message, long timestamp) {
+    protected static void queuePlayerCommand(Player player, String message, long timestamp, boolean cancelled) {
         int currentConsumer = Consumer.currentConsumer;
         int consumerId = Consumer.newConsumerId(currentConsumer);
         addConsumer(currentConsumer, new Object[] { consumerId, Process.PLAYER_COMMAND, null, 0, null, 0, 0, null });
         Consumer.consumerStrings.get(currentConsumer).put(consumerId, message);
-        queueStandardData(consumerId, currentConsumer, new String[] { player.getName(), null }, new Object[] { timestamp, player.getLocation().clone() });
+        queueStandardData(consumerId, currentConsumer, new String[] { player.getName(), null }, new Object[] { timestamp, player.getLocation().clone(), cancelled });
     }
 
     protected static void queuePlayerInteraction(String user, BlockState block, Material type) {
