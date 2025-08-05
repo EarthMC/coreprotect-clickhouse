@@ -658,7 +658,7 @@ public class LookupRaw extends Queue {
                 query += ")";
             }
 
-            query += queryOrder + (hasUnion && !countRows ? queryLimit : queryLimitOffset) + " SETTINGS output_format_json_quote_64bit_integers=0";
+            query += queryOrder + queryLimitOffset + " SETTINGS output_format_json_quote_64bit_integers=0";
             return statement.executeQuery(query);
         }
         catch (Exception e) {
