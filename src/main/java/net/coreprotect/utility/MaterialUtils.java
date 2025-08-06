@@ -78,6 +78,7 @@ public class MaterialUtils extends Queue {
 
         String name = ConfigHandler.materialsReversed.get(id);
         if (name != null && id > 0) {
+            name = name.toUpperCase(Locale.ROOT);
             if (name.contains(":")) {
                 name = name.split(":")[1];
             }
