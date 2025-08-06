@@ -21,9 +21,7 @@ class EntityInsertProcess {
                 // validate ID maps to ensure mapping wasn't reloaded from database prior to this insertion completing
                 ConfigHandler.entities.put((String) name, materialId);
                 ConfigHandler.entitiesReversed.put(materialId, (String) name);
-                if (materialId > ConfigHandler.entityId) {
-                    ConfigHandler.entityId = materialId;
-                }
+                ConfigHandler.MAX_ENTITY_ID.updateAndGet(curr -> Math.max(materialId, curr));
             }
             else {
                 Chat.console(Phrase.build(Phrase.CACHE_ERROR, "entity"));

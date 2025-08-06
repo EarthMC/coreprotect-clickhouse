@@ -26,8 +26,6 @@ import org.bukkit.entity.LivingEntity;
 
 public class EntityUtils extends Queue {
 
-    private static final String NAMESPACE = "minecraft:";
-
     private EntityUtils() {
         throw new IllegalStateException("Utility class");
     }
@@ -41,19 +39,14 @@ public class EntityUtils extends Queue {
     }
 
     public static int getEntityId(String name, boolean internal) {
-        int id = -1;
         name = name.toLowerCase(Locale.ROOT).trim();
 
-        if (ConfigHandler.entities.get(name) != null) {
-            id = ConfigHandler.entities.get(name);
-        }
-        else if (internal) {
-            int entityID = ConfigHandler.entityId + 1;
-            ConfigHandler.entities.put(name, entityID);
-            ConfigHandler.entitiesReversed.put(entityID, name);
-            ConfigHandler.entityId = entityID;
-            Queue.queueEntityInsert(entityID, name);
-            id = ConfigHandler.entities.get(name);
+        int id = ConfigHandler.entities.getOrDefault(name, -1);
+        if (id == -1 && internal) {
+            id = ConfigHandler.MAX_ENTITY_ID.incrementAndGet();
+            ConfigHandler.entities.put(name, id);
+            ConfigHandler.entitiesReversed.put(id, name);
+            Queue.queueEntityInsert(id, name);
         }
 
         return id;
@@ -106,7 +99,7 @@ public class EntityUtils extends Queue {
         EntityType entitytype = EntityType.UNKNOWN;
         if (ConfigHandler.entitiesReversed.get(id) != null) {
             String name = ConfigHandler.entitiesReversed.get(id);
-            if (name.contains(NAMESPACE)) {
+            if (name.contains(":")) {
                 name = name.split(":")[1];
             }
             entitytype = EntityType.valueOf(name.toUpperCase(Locale.ROOT));
@@ -118,11 +111,11 @@ public class EntityUtils extends Queue {
         // Name entered by user
         EntityType type = null;
         name = name.toLowerCase(Locale.ROOT).trim();
-        if (name.contains(NAMESPACE)) {
+        if (name.contains(":")) {
             name = (name.split(":"))[1];
         }
 
-        if (ConfigHandler.entities.get(name) != null) {
+        if (ConfigHandler.entities.containsKey(name)) {
             type = EntityType.valueOf(name.toUpperCase(Locale.ROOT));
         }
 

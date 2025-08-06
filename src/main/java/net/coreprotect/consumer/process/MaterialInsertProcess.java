@@ -21,9 +21,7 @@ class MaterialInsertProcess {
                 // validate ID maps to ensure mapping wasn't reloaded from database prior to this insertion completing
                 ConfigHandler.materials.put((String) name, materialId);
                 ConfigHandler.materialsReversed.put(materialId, (String) name);
-                if (materialId > ConfigHandler.materialId) {
-                    ConfigHandler.materialId = materialId;
-                }
+                ConfigHandler.MAX_MATERIAL_ID.updateAndGet(curr -> Math.max(materialId, curr));
             }
             else {
                 Chat.console(Phrase.build(Phrase.CACHE_ERROR, "material"));

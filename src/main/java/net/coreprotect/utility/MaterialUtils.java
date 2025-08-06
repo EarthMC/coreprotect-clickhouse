@@ -7,10 +7,9 @@ import org.bukkit.Material;
 
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.consumer.Queue;
+import org.bukkit.NamespacedKey;
 
 public class MaterialUtils extends Queue {
-
-    private static final String NAMESPACE = "minecraft:";
 
     private MaterialUtils() {
         throw new IllegalStateException("Utility class");
@@ -24,42 +23,32 @@ public class MaterialUtils extends Queue {
     }
 
     public static int getBlockId(String name, boolean internal) {
-        int id = -1;
 
         name = name.toLowerCase(Locale.ROOT).trim();
         if (!name.contains(":")) {
-            name = NAMESPACE + name;
+            name = NamespacedKey.MINECRAFT + ":" + name;
         }
 
-        if (ConfigHandler.materials.get(name) != null) {
-            id = ConfigHandler.materials.get(name);
-        }
-        else if (internal) {
-            int mid = ConfigHandler.materialId + 1;
-            ConfigHandler.materials.put(name, mid);
-            ConfigHandler.materialsReversed.put(mid, name);
-            ConfigHandler.materialId = mid;
-            Queue.queueMaterialInsert(mid, name);
-            id = ConfigHandler.materials.get(name);
+        int id = ConfigHandler.materials.getOrDefault(name, -1);
+        if (id == -1 && internal) {
+            id = ConfigHandler.MAX_MATERIAL_ID.incrementAndGet();
+            ConfigHandler.materials.put(name, id);
+            ConfigHandler.materialsReversed.put(id, name);
+            Queue.queueMaterialInsert(id, name);
         }
 
         return id;
     }
 
     public static int getBlockdataId(String data, boolean internal) {
-        int id = -1;
         data = data.toLowerCase(Locale.ROOT).trim();
 
-        if (ConfigHandler.blockdata.get(data) != null) {
-            id = ConfigHandler.blockdata.get(data);
-        }
-        else if (internal) {
-            int bid = ConfigHandler.blockdataId + 1;
-            ConfigHandler.blockdata.put(data, bid);
-            ConfigHandler.blockdataReversed.put(bid, data);
-            ConfigHandler.blockdataId = bid;
-            Queue.queueBlockDataInsert(bid, data);
-            id = ConfigHandler.blockdata.get(data);
+        int id = ConfigHandler.blockdata.getOrDefault(data, -1);
+        if (id == -1 && internal) {
+            id = ConfigHandler.MAX_BLOCKDATA_ID.incrementAndGet();
+            ConfigHandler.blockdata.put(data, id);
+            ConfigHandler.blockdataReversed.put(id, data);
+            Queue.queueBlockDataInsert(id, data);
         }
 
         return id;
@@ -67,19 +56,11 @@ public class MaterialUtils extends Queue {
 
     public static String getBlockDataString(int id) {
         // Internal ID pulled from DB
-        String blockdata = "";
-        if (ConfigHandler.blockdataReversed.get(id) != null) {
-            blockdata = ConfigHandler.blockdataReversed.get(id);
-        }
-        return blockdata;
+        return ConfigHandler.blockdataReversed.getOrDefault(id, "");
     }
 
     public static String getBlockName(int id) {
-        String name = "";
-        if (ConfigHandler.materialsReversed.get(id) != null) {
-            name = ConfigHandler.materialsReversed.get(id);
-        }
-        return name;
+        return ConfigHandler.materialsReversed.getOrDefault(id, "");
     }
 
     public static String getBlockNameShort(int id) {
@@ -94,9 +75,10 @@ public class MaterialUtils extends Queue {
     public static Material getType(int id) {
         // Internal ID pulled from DB
         Material material = null;
-        if (ConfigHandler.materialsReversed.get(id) != null && id > 0) {
-            String name = ConfigHandler.materialsReversed.get(id).toUpperCase(Locale.ROOT);
-            if (name.contains(NAMESPACE.toUpperCase(Locale.ROOT))) {
+
+        String name = ConfigHandler.materialsReversed.get(id);
+        if (name != null && id > 0) {
+            if (name.contains(":")) {
                 name = name.split(":")[1];
             }
 
@@ -116,7 +98,7 @@ public class MaterialUtils extends Queue {
         Material material = null;
         name = name.toUpperCase(Locale.ROOT).trim();
         if (!name.startsWith("#")) {
-            if (name.contains(NAMESPACE.toUpperCase(Locale.ROOT))) {
+            if (name.contains(":")) {
                 name = name.split(":")[1];
             }
 
@@ -128,19 +110,14 @@ public class MaterialUtils extends Queue {
     }
 
     public static int getArtId(String name, boolean internal) {
-        int id = -1;
         name = name.toLowerCase(Locale.ROOT).trim();
 
-        if (ConfigHandler.art.get(name) != null) {
-            id = ConfigHandler.art.get(name);
-        }
-        else if (internal) {
-            int artID = ConfigHandler.artId + 1;
-            ConfigHandler.art.put(name, artID);
-            ConfigHandler.artReversed.put(artID, name);
-            ConfigHandler.artId = artID;
-            Queue.queueArtInsert(artID, name);
-            id = ConfigHandler.art.get(name);
+        int id = ConfigHandler.art.getOrDefault(name, -1);
+        if (id == -1 && internal) {
+            id = ConfigHandler.MAX_ART_ID.incrementAndGet();
+            ConfigHandler.art.put(name, id);
+            ConfigHandler.artReversed.put(id, name);
+            Queue.queueArtInsert(id, name);
         }
 
         return id;
@@ -148,11 +125,7 @@ public class MaterialUtils extends Queue {
 
     public static String getArtName(int id) {
         // Internal ID pulled from DB
-        String artname = "";
-        if (ConfigHandler.artReversed.get(id) != null) {
-            artname = ConfigHandler.artReversed.get(id);
-        }
-        return artname;
+        return ConfigHandler.artReversed.getOrDefault(id, "");
     }
 
     public static int getMaterialId(Material material) {

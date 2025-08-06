@@ -22,9 +22,7 @@ class WorldInsertProcess {
                 // validate ID maps to ensure mapping wasn't reloaded from database prior to this insertion completing
                 ConfigHandler.worlds.put((String) world, worldId);
                 ConfigHandler.worldsReversed.put(worldId, (String) world);
-                if (worldId > ConfigHandler.worldId) {
-                    ConfigHandler.worldId = worldId;
-                }
+                ConfigHandler.MAX_WORLD_ID.updateAndGet(curr -> Math.max(worldId, curr));
             }
             else {
                 Chat.console(Phrase.build(Phrase.CACHE_ERROR, "world"));

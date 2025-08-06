@@ -13,34 +13,21 @@ public class WorldUtils extends Queue {
     }
 
     public static int getWorldId(String name) {
-        int id = -1;
-        try {
-            if (ConfigHandler.worlds.get(name) == null) {
-                int wid = ConfigHandler.worldId + 1;
-                ConfigHandler.worlds.put(name, wid);
-                ConfigHandler.worldsReversed.put(wid, name);
-                ConfigHandler.worldId = wid;
-                Queue.queueWorldInsert(wid, name);
-            }
-            id = ConfigHandler.worlds.get(name);
+        Integer id = ConfigHandler.worlds.get(name);
+
+        if (id == null) {
+            id = ConfigHandler.MAX_WORLD_ID.incrementAndGet();
+
+            ConfigHandler.worlds.put(name, id);
+            ConfigHandler.worldsReversed.put(id, name);
+            Queue.queueWorldInsert(id, name);
         }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+
         return id;
     }
 
     public static String getWorldName(int id) {
-        String name = "";
-        try {
-            if (ConfigHandler.worldsReversed.get(id) != null) {
-                name = ConfigHandler.worldsReversed.get(id);
-            }
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-        return name;
+        return ConfigHandler.worldsReversed.get(id);
     }
 
     public static int matchWorld(String name) {

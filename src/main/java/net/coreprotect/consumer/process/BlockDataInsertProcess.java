@@ -21,9 +21,7 @@ class BlockDataInsertProcess {
                 // validate ID maps to ensure mapping wasn't reloaded from database prior to this insertion completing
                 ConfigHandler.blockdata.put((String) name, materialId);
                 ConfigHandler.blockdataReversed.put(materialId, (String) name);
-                if (materialId > ConfigHandler.blockdataId) {
-                    ConfigHandler.blockdataId = materialId;
-                }
+                ConfigHandler.MAX_BLOCKDATA_ID.updateAndGet(curr -> Math.max(materialId, curr));
             }
             else {
                 Chat.console(Phrase.build(Phrase.CACHE_ERROR, "blockdata"));

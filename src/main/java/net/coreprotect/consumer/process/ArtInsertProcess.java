@@ -21,9 +21,7 @@ class ArtInsertProcess {
                 // validate ID maps to ensure mapping wasn't reloaded from database prior to this insertion completing
                 ConfigHandler.art.put((String) name, materialId);
                 ConfigHandler.artReversed.put(materialId, (String) name);
-                if (materialId > ConfigHandler.artId) {
-                    ConfigHandler.artId = materialId;
-                }
+                ConfigHandler.MAX_ART_ID.updateAndGet(curr -> Math.max(materialId, curr));
             }
             else {
                 Chat.console(Phrase.build(Phrase.CACHE_ERROR, "art"));

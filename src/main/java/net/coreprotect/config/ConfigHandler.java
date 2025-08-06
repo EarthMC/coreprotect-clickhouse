@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import net.coreprotect.CoreProtect;
@@ -75,11 +77,11 @@ public class ConfigHandler extends Queue {
     public static volatile boolean pauseConsumer = false;
     public static volatile boolean worldeditEnabled = false;
     public static volatile boolean databaseReachable = true;
-    public static volatile int worldId = 0;
-    public static volatile int materialId = 0;
-    public static volatile int blockdataId = 0;
-    public static volatile int entityId = 0;
-    public static volatile int artId = 0;
+    public static final AtomicInteger MAX_WORLD_ID = new AtomicInteger();
+    public static final AtomicInteger MAX_MATERIAL_ID = new AtomicInteger();
+    public static final AtomicInteger MAX_BLOCKDATA_ID = new AtomicInteger();
+    public static final AtomicInteger MAX_ENTITY_ID = new AtomicInteger();
+    public static final AtomicInteger MAX_ART_ID = new AtomicInteger();
 
     private static <K, V> Map<K, V> syncMap() {
         return Collections.synchronizedMap(new HashMap<>());
@@ -195,7 +197,7 @@ public class ConfigHandler extends Queue {
             ConfigHandler.loadBlacklist(); // Load the blacklist file if it exists.
         }
         catch (Exception e) {
-            e.printStackTrace();
+            CoreProtect.getInstance().getSLF4JLogger().warn("An unexpected error occurred while loading the config", e);
         }
     }
 
@@ -242,151 +244,137 @@ public class ConfigHandler extends Queue {
 
     public static void loadTypes(Statement statement) {
         try {
-            String query = "SELECT id,material FROM " + ConfigHandler.prefix + "material_map";
-            ResultSet rs = statement.executeQuery(query);
-            ConfigHandler.materials.clear();
-            ConfigHandler.materialsReversed.clear();
-            materialId = 0;
+            try (final ResultSet rs = statement.executeQuery("SELECT id,material FROM " + ConfigHandler.prefix + "material_map")) {
+                ConfigHandler.materials.clear();
+                ConfigHandler.materialsReversed.clear();
+                MAX_MATERIAL_ID.set(0);
 
-            while (rs.next()) {
-                int id = rs.getInt("id");
-                String material = rs.getString("material");
-                ConfigHandler.materials.put(material, id);
-                ConfigHandler.materialsReversed.put(id, material);
-                if (id > materialId) {
-                    materialId = id;
+                while (rs.next()) {
+                    int id = rs.getInt("id");
+                    String material = rs.getString("material");
+                    ConfigHandler.materials.put(material, id);
+                    ConfigHandler.materialsReversed.put(id, material);
+                    if (id > MAX_MATERIAL_ID.get()) {
+                        MAX_MATERIAL_ID.set(id);
+                    }
                 }
             }
-            rs.close();
 
-            query = "SELECT id,data FROM " + ConfigHandler.prefix + "blockdata_map";
-            rs = statement.executeQuery(query);
-            ConfigHandler.blockdata.clear();
-            ConfigHandler.blockdataReversed.clear();
-            blockdataId = 0;
+            try (final ResultSet rs = statement.executeQuery("SELECT id,data FROM " + ConfigHandler.prefix + "blockdata_map")) {
+                ConfigHandler.blockdata.clear();
+                ConfigHandler.blockdataReversed.clear();
+                MAX_BLOCKDATA_ID.set(0);
 
-            while (rs.next()) {
-                int id = rs.getInt("id");
-                String data = rs.getString("data");
-                ConfigHandler.blockdata.put(data, id);
-                ConfigHandler.blockdataReversed.put(id, data);
-                if (id > blockdataId) {
-                    blockdataId = id;
+                while (rs.next()) {
+                    int id = rs.getInt("id");
+                    String data = rs.getString("data");
+                    ConfigHandler.blockdata.put(data, id);
+                    ConfigHandler.blockdataReversed.put(id, data);
+                    MAX_BLOCKDATA_ID.updateAndGet(curr -> Math.max(id, curr));
                 }
             }
-            rs.close();
 
-            query = "SELECT id,art FROM " + ConfigHandler.prefix + "art_map";
-            rs = statement.executeQuery(query);
-            ConfigHandler.art.clear();
-            ConfigHandler.artReversed.clear();
-            artId = 0;
+            try (final ResultSet rs = statement.executeQuery("SELECT id,art FROM " + ConfigHandler.prefix + "art_map")) {
+                ConfigHandler.art.clear();
+                ConfigHandler.artReversed.clear();
+                MAX_ART_ID.set(0);
 
-            while (rs.next()) {
-                int id = rs.getInt("id");
-                String art = rs.getString("art");
-                ConfigHandler.art.put(art, id);
-                ConfigHandler.artReversed.put(id, art);
-                if (id > artId) {
-                    artId = id;
+                while (rs.next()) {
+                    int id = rs.getInt("id");
+                    String art = rs.getString("art");
+                    ConfigHandler.art.put(art, id);
+                    ConfigHandler.artReversed.put(id, art);
+                    MAX_ART_ID.updateAndGet(curr -> Math.max(id, curr));
                 }
             }
-            rs.close();
 
-            query = "SELECT id,entity FROM " + ConfigHandler.prefix + "entity_map";
-            rs = statement.executeQuery(query);
-            ConfigHandler.entities.clear();
-            ConfigHandler.entitiesReversed.clear();
-            entityId = 0;
+            try (final ResultSet rs = statement.executeQuery("SELECT id,entity FROM " + ConfigHandler.prefix + "entity_map")) {
+                ConfigHandler.entities.clear();
+                ConfigHandler.entitiesReversed.clear();
+                MAX_ENTITY_ID.set(0);
 
-            while (rs.next()) {
-                int id = rs.getInt("id");
-                String entity = rs.getString("entity");
-                ConfigHandler.entities.put(entity, id);
-                ConfigHandler.entitiesReversed.put(id, entity);
-                if (id > entityId) {
-                    entityId = id;
+                while (rs.next()) {
+                    int id = rs.getInt("id");
+                    String entity = rs.getString("entity");
+                    ConfigHandler.entities.put(entity, id);
+                    ConfigHandler.entitiesReversed.put(id, entity);
+                    MAX_ENTITY_ID.updateAndGet(curr -> Math.max(id, curr));
                 }
             }
-            rs.close();
         }
-        catch (Exception e) {
-            e.printStackTrace();
+        catch (SQLException e) {
+            CoreProtect.getInstance().getSLF4JLogger().warn("Failed to load type tables from database", e);
         }
     }
 
     public static void loadWorlds(Statement statement) {
-        try {
-            String query = "SELECT id,world FROM " + ConfigHandler.prefix + "world";
-            ResultSet rs = statement.executeQuery(query);
+        try (final ResultSet rs = statement.executeQuery("SELECT id,world FROM " + ConfigHandler.prefix + "world")) {
             ConfigHandler.worlds.clear();
             ConfigHandler.worldsReversed.clear();
-            worldId = 0;
+            MAX_WORLD_ID.set(0);
 
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String world = rs.getString("world");
                 ConfigHandler.worlds.put(world, id);
                 ConfigHandler.worldsReversed.put(id, world);
-                if (id > worldId) {
-                    worldId = id;
-                }
+                MAX_WORLD_ID.updateAndGet(curr -> Math.max(id, curr));
             }
-            rs.close();
 
-            List<World> worlds = Bukkit.getServer().getWorlds();
-            for (World world : worlds) {
+            for (final World world : Bukkit.getServer().getWorlds()) {
                 String worldname = world.getName();
-                if (ConfigHandler.worlds.get(worldname) == null) {
-                    int id = worldId + 1;
+                if (!ConfigHandler.worlds.containsKey(worldname)) {
+                    int id = MAX_WORLD_ID.incrementAndGet();
                     ConfigHandler.worlds.put(worldname, id);
                     ConfigHandler.worldsReversed.put(id, worldname);
-                    worldId = id;
                     Queue.queueWorldInsert(id, worldname);
                 }
             }
         }
-        catch (Exception e) {
-            e.printStackTrace();
+        catch (SQLException e) {
+            CoreProtect.getInstance().getSLF4JLogger().warn("Failed to load worlds from database", e);
         }
     }
 
     private static boolean checkDatabaseLock(Statement statement) {
-        try {
-            if (Config.getGlobal().DATABASE_LOCK) {
-                boolean locked = true;
-                boolean lockMessage = false;
-                int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
-                int waitTime = unixtimestamp + 15;
-                while (locked) {
-                    locked = false;
-                    unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
-                    int checkTime = unixtimestamp - 15;
-                    String query = "SELECT * FROM " + ConfigHandler.prefix + "database_lock WHERE rowid='1' AND status='1' AND time >= '" + checkTime + "' LIMIT 1";
-                    ResultSet rs = statement.executeQuery(query);
-                    while (rs.next()) {
-                        if (unixtimestamp < waitTime) {
-                            if (!lockMessage) {
-                                Chat.sendConsoleMessage("[CoreProtect] " + Phrase.build(Phrase.DATABASE_LOCKED_1));
-                                lockMessage = true;
-                            }
-                            Thread.sleep(1000);
-                        }
-                        else {
-                            Chat.sendConsoleMessage(Color.RED + "[CoreProtect] " + Phrase.build(Phrase.DATABASE_LOCKED_2));
-                            Chat.sendConsoleMessage(Color.GREY + "[CoreProtect] " + Phrase.build(Phrase.DATABASE_LOCKED_3));
-                            Chat.sendConsoleMessage(Color.GREY + "[CoreProtect] " + Phrase.build(Phrase.DATABASE_LOCKED_4));
-                            return false;
-                        }
-
-                        locked = true;
-                    }
-                    rs.close();
-                }
-            }
+        if (!Config.getGlobal().DATABASE_LOCK) {
+            return true;
         }
-        catch (Exception e) {
-            e.printStackTrace();
+
+        try {
+            boolean locked = true;
+            boolean lockMessage = false;
+            int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
+            int waitTime = unixtimestamp + 15;
+            while (locked) {
+                locked = false;
+                unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
+                int checkTime = unixtimestamp - 15;
+                String query = "SELECT * FROM " + ConfigHandler.prefix + "database_lock WHERE rowid='1' AND status='1' AND time >= '" + checkTime + "' LIMIT 1";
+                ResultSet rs = statement.executeQuery(query);
+                while (rs.next()) {
+                    if (unixtimestamp < waitTime) {
+                        if (!lockMessage) {
+                            Chat.sendConsoleMessage("[CoreProtect] " + Phrase.build(Phrase.DATABASE_LOCKED_1));
+                            lockMessage = true;
+                        }
+                        Thread.sleep(1000);
+                    } else {
+                        Chat.sendConsoleMessage(Color.RED + "[CoreProtect] " + Phrase.build(Phrase.DATABASE_LOCKED_2));
+                        Chat.sendConsoleMessage(Color.GREY + "[CoreProtect] " + Phrase.build(Phrase.DATABASE_LOCKED_3));
+                        Chat.sendConsoleMessage(Color.GREY + "[CoreProtect] " + Phrase.build(Phrase.DATABASE_LOCKED_4));
+                        return false;
+                    }
+
+                    locked = true;
+                }
+                rs.close();
+            }
+        } catch (SQLException e) {
+            CoreProtect.getInstance().getSLF4JLogger().error("Failed to check database lock", e);
+            return false;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
 
         return true;
@@ -406,7 +394,7 @@ public class ConfigHandler extends Queue {
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            CoreProtect.getInstance().getSLF4JLogger().error("An unexpected error occurred while initializing", e);
         }
 
         try (Connection connection = Database.getConnection(true, 0)) {
@@ -439,22 +427,16 @@ public class ConfigHandler extends Queue {
             statement.close();
 
             return validVersion && databaseLock;
-        }
-        catch (Exception e) {
-            e.printStackTrace();
+        } catch (SQLException e) {
+            CoreProtect.getInstance().getSLF4JLogger().error("An unexpected error occurred while loading types/worlds/players", e);
         }
 
         return false;
     }
 
     public static void performDisable() {
-        try {
-            Database.closeConnection();
-            ListenerHandler.unregisterNetworking(); // Unregister channels for networking API
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+        Database.closeConnection();
+        ListenerHandler.unregisterNetworking(); // Unregister channels for networking API
     }
 
 }

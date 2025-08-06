@@ -3,7 +3,6 @@ package net.coreprotect.utility;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import net.coreprotect.utility.serialize.BannerData;
@@ -30,8 +29,6 @@ import net.coreprotect.thread.Scheduler;
 
 public class BlockUtils {
 
-    private static final String NAMESPACE = "minecraft:";
-
     private BlockUtils() {
         throw new IllegalStateException("Utility class");
     }
@@ -49,7 +46,7 @@ public class BlockUtils {
                 return result;
             }
 
-            if (material.isBlock() && !createBlockData(material).getAsString().equals(string) && string.startsWith(NAMESPACE + material.name().toLowerCase(Locale.ROOT) + "[") && string.endsWith("]")) {
+            if (material.isBlock() && !createBlockData(material).getAsString().equals(string) && string.startsWith(material.getKey().asString() + "[") && string.endsWith("]")) {
                 String substring = string.substring(material.name().length() + 11, string.length() - 1);
                 String[] blockDataSplit = substring.split(",");
                 ArrayList<String> blockDataArray = new ArrayList<>();
@@ -107,7 +104,7 @@ public class BlockUtils {
                         result = String.join(",", blockDataArray);
                     }
                     else {
-                        result = NAMESPACE + material.name().toLowerCase(Locale.ROOT) + "[" + String.join(",", blockDataArray) + "]";
+                        result = material.getKey().asString() + "[" + String.join(",", blockDataArray) + "]";
                     }
                 }
                 else {
