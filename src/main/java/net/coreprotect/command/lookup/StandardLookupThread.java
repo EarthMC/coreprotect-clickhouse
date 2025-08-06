@@ -368,7 +368,7 @@ public class StandardLookupThread implements Runnable {
                                         dname = playerName;
                                         isPlayer = true;
                                     } else {
-                                        dname = EntityUtils.getEntityType(dtype).name();
+                                        dname = EntityUtils.getEntityType(dtype).name().toLowerCase(Locale.ROOT);
                                     }
                                 } else {
                                     dname = MaterialUtils.getType(dtype).name().toLowerCase(Locale.ROOT);
