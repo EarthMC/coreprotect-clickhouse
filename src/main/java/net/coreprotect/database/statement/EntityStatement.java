@@ -3,12 +3,12 @@ package net.coreprotect.database.statement;
 import java.io.ByteArrayInputStream;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 import net.coreprotect.CoreProtect;
-import net.coreprotect.database.FakeRowNumberResultSet;
 import net.coreprotect.utility.serialize.Bytes;
 import org.bukkit.block.BlockState;
 import org.bukkit.util.io.BukkitObjectInputStream;
@@ -21,21 +21,14 @@ public class EntityStatement {
         throw new IllegalStateException("Database class");
     }
 
-    public static ResultSet insert(PreparedStatement preparedStmt, int time, String entityData) {
-        try {
-            final int rowid = CoreProtect.getInstance().rowNumbers().nextRowId("entity", preparedStmt.getConnection());
-            preparedStmt.setInt(1, time);
-            preparedStmt.setString(2, entityData);
-            preparedStmt.setInt(3, rowid);
-            preparedStmt.execute();
+    public static int insert(PreparedStatement preparedStmt, int time, String entityData) throws SQLException {
+        final int rowid = CoreProtect.getInstance().rowNumbers().nextRowId("entity", preparedStmt.getConnection());
+        preparedStmt.setInt(1, time);
+        preparedStmt.setString(2, entityData);
+        preparedStmt.setInt(3, rowid);
+        preparedStmt.execute();
 
-            return new FakeRowNumberResultSet(rowid);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return null;
+        return rowid;
     }
 
     public static List<Object> getData(Statement statement, BlockState block, String query) {

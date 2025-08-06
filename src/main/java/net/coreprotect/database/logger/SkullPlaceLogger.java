@@ -1,7 +1,6 @@
 package net.coreprotect.database.logger;
 
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.Locale;
 
 import org.bukkit.Material;
@@ -9,7 +8,6 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.Skull;
 
 import net.coreprotect.config.ConfigHandler;
-import net.coreprotect.database.Database;
 import net.coreprotect.database.statement.SkullStatement;
 import net.coreprotect.paper.PaperAdapter;
 
@@ -30,23 +28,10 @@ public class SkullPlaceLogger {
 
             if (block instanceof Skull) {
                 Skull skull = (Skull) block;
-                String skullOwner = "";
-                String skullSkin = null;
                 if (skull.hasOwner()) {
-                    skullOwner = PaperAdapter.ADAPTER.getSkullOwner(skull);
-                    skullSkin = PaperAdapter.ADAPTER.getSkullSkin(skull);
-                    ResultSet resultSet = SkullStatement.insert(preparedStmt2, time, skullOwner, skullSkin);
-                    if (Database.hasReturningKeys()) {
-                        resultSet.next();
-                        skullKey = resultSet.getInt(1);
-                        resultSet.close();
-                    }
-                    else {
-                        ResultSet keys = preparedStmt2.getGeneratedKeys();
-                        keys.next();
-                        skullKey = keys.getInt(1);
-                        keys.close();
-                    }
+                    String skullOwner = PaperAdapter.ADAPTER.getSkullOwner(skull);
+                    String skullSkin = PaperAdapter.ADAPTER.getSkullSkin(skull);
+                    skullKey = SkullStatement.insert(preparedStmt2, time, skullOwner, skullSkin);
                 }
             }
 

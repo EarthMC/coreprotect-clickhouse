@@ -114,7 +114,7 @@ public class Database extends Queue {
     }
 
     public static boolean hasReturningKeys() {
-        return true;
+        return false;
     }
 
     public static void containerBreakCheck(String user, Material type, Object container, ItemStack[] contents, Location location) {
