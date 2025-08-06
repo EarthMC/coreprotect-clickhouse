@@ -27,7 +27,7 @@ public class WorldUtils extends Queue {
     }
 
     public static String getWorldName(int id) {
-        return ConfigHandler.worldsReversed.get(id);
+        return ConfigHandler.worldsReversed.getOrDefault(id, "");
     }
 
     public static int matchWorld(String name) {
