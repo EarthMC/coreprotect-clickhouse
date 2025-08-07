@@ -27,11 +27,11 @@ public class __22_4_2 {
         final List<String> tables = List.of("block", "item", "container");
 
         final String partitionBy = "PARTITION BY " + Config.getGlobal().PARTITIONING;
-        final String orderBy = "ORDER BY (wid, y, x, z, time, user, type)";
+        final String orderBy = "ORDER BY (wid, y, x, z, time, user, type) ";
 
-        final String createBlock = "(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int16, z Int32, type UInt32, data UInt32, meta JSON, blockdata LowCardinality(String), action UInt8, rolled_back UInt8, version UInt8) ENGINE = ReplacingMergeTree(version) " + orderBy + partitionBy;
-        final String createItem = "(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int16, z Int32, type UInt32, data JSON, amount UInt32, action UInt8, rolled_back UInt8, version UInt8) ENGINE = ReplacingMergeTree(version) " + orderBy + partitionBy;
-        final String createContainer = "(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int16, z Int32, type UInt32, data UInt32, amount UInt32, metadata JSON, action UInt8, rolled_back UInt8, version UInt8) ENGINE = ReplacingMergeTree(version) " + orderBy + partitionBy;
+        final String createBlock = "(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int16, z Int32, type UInt32, data UInt32, meta JSON, blockdata LowCardinality(String), action UInt8, rolled_back UInt8, version UInt8) ENGINE = ReplacingMergeTree(version) " + orderBy;
+        final String createItem = "(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int16, z Int32, type UInt32, data JSON, amount UInt32, action UInt8, rolled_back UInt8, version UInt8) ENGINE = ReplacingMergeTree(version) " + orderBy;
+        final String createContainer = "(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int16, z Int32, type UInt32, data UInt32, amount UInt32, metadata JSON, action UInt8, rolled_back UInt8, version UInt8) ENGINE = ReplacingMergeTree(version) " + orderBy;
 
         try {
             logger.info("Creating temporary block/item/container tables.");
@@ -51,9 +51,9 @@ public class __22_4_2 {
             }
 
             logger.info("Re-creating tables with updated order by");
-            statement.execute("CREATE TABLE " + ConfigHandler.prefix + "block" + createBlock);
-            statement.execute("CREATE TABLE " + ConfigHandler.prefix + "item" + createItem);
-            statement.execute("CREATE TABLE " + ConfigHandler.prefix + "container" + createContainer);
+            statement.execute("CREATE TABLE " + ConfigHandler.prefix + "block" + createBlock + partitionBy);
+            statement.execute("CREATE TABLE " + ConfigHandler.prefix + "item" + createItem + partitionBy);
+            statement.execute("CREATE TABLE " + ConfigHandler.prefix + "container" + createContainer + partitionBy);
 
             logger.info("Inserting data back into tables...");
             for (final String table : tables) {
