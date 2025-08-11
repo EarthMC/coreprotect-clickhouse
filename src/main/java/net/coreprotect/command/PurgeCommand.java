@@ -570,11 +570,16 @@ public class PurgeCommand extends Consumer {
                     return;
                 }
 
-                String table = args[3];
-                String partition = args[4];
+                String table = args[3].trim();
+                final String partition = args[4];
 
                 if (!table.startsWith(ConfigHandler.prefix)) {
                     table = ConfigHandler.prefix + table;
+                }
+
+                final int spaceIndex = table.indexOf(' ');
+                if (spaceIndex != -1) {
+                    table = table.substring(0, spaceIndex);
                 }
 
                 try (Connection connection = Database.getConnection(true, 1000);
