@@ -5,15 +5,20 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import net.coreprotect.CoreProtect;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
@@ -35,6 +40,16 @@ import net.coreprotect.utility.VersionUtils;
 public class PurgeCommand extends Consumer {
 
     protected static void runCommand(final CommandSender player, boolean permission, String[] args) {
+        if (!permission) {
+            Chat.sendMessage(player, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.NO_PERMISSION));
+            return;
+        }
+
+        if (args.length > 1 && "partition".equals(args[1])) {
+            partitionSubCommand(player, args);
+            return;
+        }
+
         int resultc = args.length;
         Location location = CommandParser.parseLocation(player, args);
         final Integer[] argRadius = CommandParser.parseRadius(args, player, location);
@@ -58,10 +73,6 @@ public class PurgeCommand extends Consumer {
         }
         if (ConfigHandler.purgeRunning) {
             Chat.sendMessage(player, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.PURGE_IN_PROGRESS));
-            return;
-        }
-        if (!permission) {
-            Chat.sendMessage(player, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.NO_PERMISSION));
             return;
         }
         if (resultc <= 1) {
@@ -505,4 +516,80 @@ public class PurgeCommand extends Consumer {
         Thread thread = new Thread(runnable);
         thread.start();
     }
+
+    private static void partitionSubCommand(final CommandSender sender, final String[] args) {
+        // args[0] = purge, args[1] = partition, args[2] = subcommand
+        if (args.length <= 2) {
+            Chat.sendMessage(sender, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.MISSING_PARAMETERS, "/co purge partition <list|delete>"));
+            return;
+        }
+
+        switch (args[2].toLowerCase(Locale.ROOT)) {
+            case "list" -> {
+                final String queryTable = args.length >= 4 ? args[3].toLowerCase(Locale.ROOT) : null;
+
+                try (Connection connection = Database.getConnection(true, 1000);
+                    PreparedStatement preparedStatement = connection.prepareStatement("SELECT table, partition, sum(rows) AS rows FROM system.parts WHERE partition != 'tuple()' AND database = ? " + (queryTable != null ? "AND table = ? " : "") + " AND active GROUP BY table, partition ORDER BY partition ASC")) {
+
+                    preparedStatement.setString(1, ConfigHandler.database);
+                    if (queryTable != null) {
+                        preparedStatement.setString(2, queryTable);
+                    }
+
+                    final Map<String, List<TablePartitionData>> data = new LinkedHashMap<>();
+                    try (ResultSet rs = preparedStatement.executeQuery()) {
+                        while (rs.next()) {
+                            String table = rs.getString("table");
+
+                            data.computeIfAbsent(table, k -> new ArrayList<>()).add(new TablePartitionData(rs.getString("partition"), rs.getLong("rows")));
+                        }
+                    }
+
+                    for (final Map.Entry<String, List<TablePartitionData>> entry : data.entrySet()) {
+                        Chat.sendMessage(sender, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- Partition Data - " + entry.getKey());
+
+                        for (final TablePartitionData partition : entry.getValue()) {
+                            Chat.sendMessage(sender, "Partition: " + partition.partition +  " <gray>|</gray> Rows: " + partition.rows);
+                        }
+                    }
+                } catch (SQLException e) {
+                    Chat.sendMessage(sender, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- Failed to list partitions - see the console for details");
+                    CoreProtect.getInstance().getSLF4JLogger().warn("Failed to list partitions", e);
+                }
+            }
+            case "delete" -> {
+                // /co purge partition delete block 2025-07-01
+
+                if (!(sender instanceof ConsoleCommandSender)) {
+                    Chat.sendMessage(sender, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.COMMAND_CONSOLE));
+                    return;
+                }
+
+                if (args.length <= 4) {
+                    Chat.sendMessage(sender, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.MISSING_PARAMETERS, "/co purge partition delete <table> <partition>"));
+                    return;
+                }
+
+                String table = args[3];
+                String partition = args[4];
+
+                if (!table.startsWith(ConfigHandler.prefix)) {
+                    table = ConfigHandler.prefix + table;
+                }
+
+                try (Connection connection = Database.getConnection(true, 1000);
+                     PreparedStatement preparedStatement = connection.prepareStatement("ALTER TABLE " + table + " DROP PARTITION ?")) {
+
+                    preparedStatement.setString(1, partition);
+                    preparedStatement.execute();
+
+                    Chat.sendMessage(sender, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- Successfully dropped partition " + partition + " from table " + table + ".");
+                } catch (SQLException e) {
+                    Chat.sendMessage(sender, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- An exception occurred while dropping partition: " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    private record TablePartitionData(String partition, long rows) {}
 }
