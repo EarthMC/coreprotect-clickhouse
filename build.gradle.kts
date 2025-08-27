@@ -4,6 +4,7 @@ plugins {
     id("io.papermc.paperweight.userdev") version "2.0.0-beta.17"
     id("com.gradleup.shadow") version "9.0.0-rc1"
     id("xyz.jpenilla.run-paper") version "2.3.1"
+    id("com.gorylenko.gradle-git-properties") version "2.5.2"
 }
 
 repositories {
@@ -100,6 +101,10 @@ tasks.withType(xyz.jpenilla.runtask.task.AbstractRun::class) {
         languageVersion = JavaLanguageVersion.of(21)
     }
     jvmArgs("-XX:+AllowEnhancedClassRedefinition")
+}
+
+gitProperties {
+    keys = listOf("git.branch", "git.commit.id", "git.commit.id.abbrev", "git.remote.origin.url", "git.commit.message.short")
 }
 
 publishing {
