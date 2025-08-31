@@ -2,7 +2,7 @@ plugins {
     `java-library`
     `maven-publish`
     id("io.papermc.paperweight.userdev") version "2.0.0-beta.17"
-    id("com.gradleup.shadow") version "9.0.0-rc1"
+    id("com.gradleup.shadow") version "9.1.0"
     id("xyz.jpenilla.run-paper") version "2.3.1"
     id("com.gorylenko.gradle-git-properties") version "2.5.2"
 }
@@ -108,6 +108,8 @@ gitProperties {
 }
 
 publishing {
+    shadow.addShadowVariantIntoJavaComponent = false
+
     repositories {
         maven {
             val releasesUrl = "https://repo.earthmc.net/releases"
