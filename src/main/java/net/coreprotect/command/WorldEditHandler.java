@@ -43,7 +43,7 @@ public class WorldEditHandler {
                         int yMax = y + (height - 1);
                         int zMin = z;
                         int zMax = z + (length - 1);
-                        result = new Integer[] { max, xMin, xMax, yMin, yMax, zMin, zMax, 1 };
+                        result = new Integer[] { max / 2, xMin, xMax, yMin, yMax, zMin, zMax, 1 };
                     }
                 }
             }
