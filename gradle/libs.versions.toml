@@ -1,6 +1,6 @@
 [versions]
-minecraft = "1.21.4"
-hikaricp = "6.3.0"
+minecraft = "1.21.8"
+hikaricp = "7.0.2"
 
 [libraries]
 hikaricp = { group = "com.zaxxer", name = "HikariCP", version.ref = "hikaricp" }
