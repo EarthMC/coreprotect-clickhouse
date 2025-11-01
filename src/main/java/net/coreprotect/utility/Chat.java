@@ -18,6 +18,8 @@ public final class Chat {
     }
 
     public static void sendComponent(CommandSender sender, String string, String bypass) {
+        string = LegacyColor.translateLegacyCharacters(string);
+
         final Component message;
         if (bypass != null) {
             message = MiniMessage.miniMessage().deserialize(string + (!string.contains("<extra>") ? "<extra>" : ""), Placeholder.unparsed("extra", bypass));
