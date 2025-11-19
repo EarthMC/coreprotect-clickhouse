@@ -12,7 +12,7 @@ public class CoreProtectLookupEvent extends Event implements Cancellable {
     private static final HandlerList handlers = new HandlerList();
     private boolean cancelled = false;
     private final CommandSender commandSender;
-    private List<String> users;
+    private final List<String> users;
     private String cancelMessage = "This lookup was cancelled by another plugin.";
 
     public CoreProtectLookupEvent(CommandSender commandSender, List<String> users) {
