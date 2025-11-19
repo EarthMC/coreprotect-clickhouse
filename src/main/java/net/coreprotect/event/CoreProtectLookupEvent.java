@@ -28,15 +28,6 @@ public class CoreProtectLookupEvent extends Event implements Cancellable {
         return users;
     }
 
-    public void setUsers(List<String> users) {
-        if (users.isEmpty()) {
-            setCancelled(true);
-            setCancelMessage("Users list was modified by another plugin. No users remaining.");
-            return;
-        }
-        this.users = users;
-    }
-
     public void setCancelMessage(String cancelMessage) {
         this.cancelMessage = cancelMessage;
     }
