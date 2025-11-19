@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import net.coreprotect.event.CoreProtectLookupEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -52,6 +53,12 @@ public class LookupCommand {
         boolean pageLookup = false;
 
         if (argBlocks == null || argExclude == null || argExcludeUsers == null) {
+            return;
+        }
+
+        CoreProtectLookupEvent event = new CoreProtectLookupEvent(player, argUsers);
+        if (!event.callEvent()) {
+            Chat.sendMessage(player, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + event.getCancelMessage());
             return;
         }
 
