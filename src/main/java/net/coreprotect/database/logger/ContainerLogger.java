@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Bukkit;
@@ -26,7 +25,6 @@ import net.coreprotect.utility.BlockUtils;
 import net.coreprotect.utility.ItemUtils;
 import net.coreprotect.utility.MaterialUtils;
 import net.coreprotect.utility.WorldUtils;
-import net.coreprotect.utility.serialize.ItemMetaHandler;
 
 public class ContainerLogger extends Queue {
 
@@ -67,7 +65,7 @@ public class ContainerLogger extends Queue {
             }
 
             // Check if this is a dispenser with no actual changes
-            if (player.equals("#dispenser") && ItemUtils.compareContainers(oldInventory, newInventory)) {
+            if ("#dispenser".equals(player) && ItemUtils.compareContainers(oldInventory, newInventory)) {
                 // No changes detected, mark this dispenser in the dispenserNoChange map
                 // Extract the location key from the loggingContainerId
                 // Format: #dispenser.x.y.z
@@ -95,7 +93,7 @@ public class ContainerLogger extends Queue {
 
             // If we reach here, the dispenser event resulted in changes
             // Remove any pending event for this dispenser
-            if (player.equals("#dispenser")) {
+            if ("#dispenser".equals(player)) {
                 String[] parts = loggingContainerId.split("\\.");
                 if (parts.length >= 4) {
                     int x = Integer.parseInt(parts[1]);
@@ -217,7 +215,7 @@ public class ContainerLogger extends Queue {
             for (ItemStack item : items) {
                 if (item != null) {
                     if (item.getAmount() > 0 && !BlockUtils.isAir(item.getType())) {
-                        CoreProtectPreLogEvent event = new CoreProtectPreLogEvent(user);
+                        CoreProtectPreLogEvent event = new CoreProtectPreLogEvent(user, location);
                         if (Config.getGlobal().API_ENABLED && !Bukkit.isPrimaryThread()) {
                             CoreProtect.getInstance().getServer().getPluginManager().callEvent(event);
                         }
@@ -233,11 +231,12 @@ public class ContainerLogger extends Queue {
                         }
 
                         int userId = UserStatement.getId(preparedStmt, event.getUser(), true);
-                        int wid = WorldUtils.getWorldId(location.getWorld().getName());
+                        Location eventLocation = event.getLocation();
+                        int wid = WorldUtils.getWorldId(eventLocation.getWorld().getName());
                         int time = (int) (System.currentTimeMillis() / 1000L);
-                        int x = location.getBlockX();
-                        int y = location.getBlockY();
-                        int z = location.getBlockZ();
+                        int x = eventLocation.getBlockX();
+                        int y = eventLocation.getBlockY();
+                        int z = eventLocation.getBlockZ();
                         int typeId = MaterialUtils.getBlockId(item.getType().name(), true);
                         int data = 0;
                         int amount = item.getAmount();

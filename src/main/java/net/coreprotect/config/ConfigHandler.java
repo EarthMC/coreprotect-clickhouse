@@ -47,6 +47,11 @@ import net.coreprotect.utility.VersionUtils;
 import oshi.hardware.CentralProcessor;
 
 public class ConfigHandler extends Queue {
+
+    public enum CacheType {
+        MATERIALS, BLOCKDATA, ART, ENTITIES, WORLDS
+    }
+
     public static int SERVER_VERSION = 0;
     public static final int EDITION_VERSION = 2;
     public static final String EDITION_BRANCH = VersionUtils.getBranch();
@@ -54,7 +59,8 @@ public class ConfigHandler extends Queue {
     public static final String COMMUNITY_EDITION = "ClickHouse Edition";
     public static final String JAVA_VERSION = "11.0";
     public static final String MINECRAFT_VERSION = "1.16";
-    public static final String LATEST_VERSION = "1.21";
+    public static final String PATCH_VERSION = "23.1";
+    public static final String LATEST_VERSION = "1.21.11";
     public static String path = "plugins/CoreProtect/";
     public static String sqlite = "database.db";
     public static String host = "127.0.0.1";
@@ -242,69 +248,139 @@ public class ConfigHandler extends Queue {
         Database.createDatabaseTables(ConfigHandler.prefix, false, null, Config.getGlobal().MYSQL, false);
     }
 
-    public static void loadTypes(Statement statement) {
-        try {
-            try (final ResultSet rs = statement.executeQuery("SELECT id,material FROM " + ConfigHandler.prefix + "material_map")) {
-                ConfigHandler.materials.clear();
-                ConfigHandler.materialsReversed.clear();
-                MAX_MATERIAL_ID.set(0);
+    public static void loadMaterials(Statement statement) {
+        try (final ResultSet rs = statement.executeQuery("SELECT id,material FROM " + ConfigHandler.prefix + "material_map")) {
+            ConfigHandler.materials.clear();
+            ConfigHandler.materialsReversed.clear();
+            MAX_MATERIAL_ID.set(0);
 
-                while (rs.next()) {
-                    int id = rs.getInt("id");
-                    String material = rs.getString("material");
-                    ConfigHandler.materials.put(material, id);
-                    ConfigHandler.materialsReversed.put(id, material);
-                    if (id > MAX_MATERIAL_ID.get()) {
-                        MAX_MATERIAL_ID.set(id);
-                    }
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String material = rs.getString("material");
+                ConfigHandler.materials.put(material, id);
+                ConfigHandler.materialsReversed.put(id, material);
+                if (id > MAX_MATERIAL_ID.get()) {
+                    MAX_MATERIAL_ID.set(id);
                 }
             }
-
-            try (final ResultSet rs = statement.executeQuery("SELECT id,data FROM " + ConfigHandler.prefix + "blockdata_map")) {
-                ConfigHandler.blockdata.clear();
-                ConfigHandler.blockdataReversed.clear();
-                MAX_BLOCKDATA_ID.set(0);
-
-                while (rs.next()) {
-                    int id = rs.getInt("id");
-                    String data = rs.getString("data");
-                    ConfigHandler.blockdata.put(data, id);
-                    ConfigHandler.blockdataReversed.put(id, data);
-                    MAX_BLOCKDATA_ID.updateAndGet(curr -> Math.max(id, curr));
-                }
-            }
-
-            try (final ResultSet rs = statement.executeQuery("SELECT id,art FROM " + ConfigHandler.prefix + "art_map")) {
-                ConfigHandler.art.clear();
-                ConfigHandler.artReversed.clear();
-                MAX_ART_ID.set(0);
-
-                while (rs.next()) {
-                    int id = rs.getInt("id");
-                    String art = rs.getString("art");
-                    ConfigHandler.art.put(art, id);
-                    ConfigHandler.artReversed.put(id, art);
-                    MAX_ART_ID.updateAndGet(curr -> Math.max(id, curr));
-                }
-            }
-
-            try (final ResultSet rs = statement.executeQuery("SELECT id,entity FROM " + ConfigHandler.prefix + "entity_map")) {
-                ConfigHandler.entities.clear();
-                ConfigHandler.entitiesReversed.clear();
-                MAX_ENTITY_ID.set(0);
-
-                while (rs.next()) {
-                    int id = rs.getInt("id");
-                    String entity = rs.getString("entity");
-                    ConfigHandler.entities.put(entity, id);
-                    ConfigHandler.entitiesReversed.put(id, entity);
-                    MAX_ENTITY_ID.updateAndGet(curr -> Math.max(id, curr));
-                }
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        catch (SQLException e) {
+    }
+
+    public static void loadBlockdata(Statement statement) {
+        try (final ResultSet rs = statement.executeQuery("SELECT id,data FROM " + ConfigHandler.prefix + "blockdata_map")) {
+            ConfigHandler.blockdata.clear();
+            ConfigHandler.blockdataReversed.clear();
+            MAX_BLOCKDATA_ID.set(0);
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String data = rs.getString("data");
+                ConfigHandler.blockdata.put(data, id);
+                ConfigHandler.blockdataReversed.put(id, data);
+                MAX_BLOCKDATA_ID.updateAndGet(curr -> Math.max(id, curr));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void loadArt(Statement statement) {
+        try (final ResultSet rs = statement.executeQuery("SELECT id,art FROM " + ConfigHandler.prefix + "art_map")) {
+            ConfigHandler.art.clear();
+            ConfigHandler.artReversed.clear();
+            MAX_ART_ID.set(0);
+
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String art = rs.getString("art");
+                ConfigHandler.art.put(art, id);
+                ConfigHandler.artReversed.put(id, art);
+                MAX_ART_ID.updateAndGet(curr -> Math.max(id, curr));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void loadEntities(Statement statement) {
+        try (final ResultSet rs = statement.executeQuery("SELECT id,entity FROM " + ConfigHandler.prefix + "entity_map")) {
+            ConfigHandler.entities.clear();
+            ConfigHandler.entitiesReversed.clear();
+            MAX_ENTITY_ID.set(0);
+
+            while (rs.next()) {
+                 int id = rs.getInt("id");
+                 String entity = rs.getString("entity");
+                 ConfigHandler.entities.put(entity, id);
+                 ConfigHandler.entitiesReversed.put(id, entity);
+                 MAX_ENTITY_ID.updateAndGet(curr -> Math.max(id, curr));
+            }
+        } catch (SQLException e) {
             CoreProtect.getInstance().getSLF4JLogger().warn("Failed to load type tables from database", e);
         }
+    }
+
+    public static void loadTypes(Statement statement) {
+        loadMaterials(statement);
+        loadBlockdata(statement);
+        loadArt(statement);
+        loadEntities(statement);
+    }
+
+    /**
+     * Unified method to reload cache from database when DATABASE_LOCK is false (multi-server setup)
+     * 
+     * @param type
+     *            The type of cache to reload
+     * @param name
+     *            The name to look up after reload
+     * @return The ID if found after reload, or -1 if not found
+     */
+    public static int reloadAndGetId(CacheType type, String name) {
+        // Only reload if DATABASE_LOCK is false (multi-server setup)
+        if (Config.getGlobal().DATABASE_LOCK) {
+            return -1;
+        }
+
+        try (Connection connection = Database.getConnection(true)) {
+            if (connection != null) {
+                Statement statement = connection.createStatement();
+
+                // Reload appropriate cache based on type
+                switch (type) {
+                    case MATERIALS:
+                        loadMaterials(statement);
+                        statement.close();
+                        return materials.getOrDefault(name, -1);
+                    case BLOCKDATA:
+                        loadBlockdata(statement);
+                        statement.close();
+                        return blockdata.getOrDefault(name, -1);
+                    case ART:
+                        loadArt(statement);
+                        statement.close();
+                        return art.getOrDefault(name, -1);
+                    case ENTITIES:
+                        loadEntities(statement);
+                        statement.close();
+                        return entities.getOrDefault(name, -1);
+                    case WORLDS:
+                        loadWorlds(statement);
+                        statement.close();
+                        return worlds.getOrDefault(name, -1);
+                    default:
+                        statement.close();
+                        return -1;
+                }
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return -1;
     }
 
     public static void loadWorlds(Statement statement) {

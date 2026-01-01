@@ -4,7 +4,6 @@ import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -20,7 +19,6 @@ import net.coreprotect.utility.BlockUtils;
 import net.coreprotect.utility.ItemUtils;
 import net.coreprotect.utility.MaterialUtils;
 import net.coreprotect.utility.WorldUtils;
-import net.coreprotect.utility.serialize.ItemMetaHandler;
 
 public class ItemLogger {
 
@@ -123,7 +121,7 @@ public class ItemLogger {
         try {
             for (ItemStack item : items) {
                 if (item != null && item.getAmount() > 0 && !BlockUtils.isAir(item.getType())) {
-                    CoreProtectPreLogEvent event = new CoreProtectPreLogEvent(user);
+                    CoreProtectPreLogEvent event = new CoreProtectPreLogEvent(user, location);
                     if (Config.getGlobal().API_ENABLED && !Bukkit.isPrimaryThread()) {
                         CoreProtect.getInstance().getServer().getPluginManager().callEvent(event);
                     }
@@ -133,11 +131,12 @@ public class ItemLogger {
                     }
 
                     int userId = UserStatement.getId(preparedStmt, event.getUser(), true);
-                    int wid = WorldUtils.getWorldId(location.getWorld().getName());
+                    Location eventLocation = event.getLocation();
+                    int wid = WorldUtils.getWorldId(eventLocation.getWorld().getName());
                     int time = (int) (System.currentTimeMillis() / 1000L) - offset;
-                    int x = location.getBlockX();
-                    int y = location.getBlockY();
-                    int z = location.getBlockZ();
+                    int x = eventLocation.getBlockX();
+                    int y = eventLocation.getBlockY();
+                    int z = eventLocation.getBlockZ();
                     int typeId = MaterialUtils.getBlockId(item.getType().name(), true);
                     int amount = item.getAmount();
                     ItemStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, typeId, item, amount, action);

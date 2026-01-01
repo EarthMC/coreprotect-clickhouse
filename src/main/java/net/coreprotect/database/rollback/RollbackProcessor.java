@@ -73,7 +73,6 @@ public class RollbackProcessor {
 
             // Process blocks
             for (CommonLookupData row : data) {
-                int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
                 int[] rollbackHashData = ConfigHandler.rollbackHash.get(finalUserString);
                 int itemCount = rollbackHashData[0];
                 int blockCount = rollbackHashData[1];
@@ -211,7 +210,7 @@ public class RollbackProcessor {
                         BlockData checkData = rowType == Material.AIR ? blockData : rawBlockData;
                         if (checkData != null) {
                             if (checkData.getAsString().equals(pendingChangeData.getAsString()) || checkData instanceof org.bukkit.block.data.MultipleFacing || checkData instanceof org.bukkit.block.data.type.Stairs || checkData instanceof org.bukkit.block.data.type.RedstoneWire) {
-                                if (rowType != Material.CHEST && rowType != Material.TRAPPED_CHEST) { // always update double chests
+                                if (rowType != Material.CHEST && rowType != Material.TRAPPED_CHEST && !BukkitAdapter.ADAPTER.isCopperChest(rowType)) { // always update double chests
                                     changeBlock = false;
                                 }
                             }
@@ -234,7 +233,7 @@ public class RollbackProcessor {
                         }
                     }
 
-                    if (countBlock && RollbackBlockHandler.processBlockChange(block, row, rollbackType, clearInventories, chunkChanges, countBlock, oldTypeMaterial, pendingChangeType, pendingChangeData, finalUserString, rawBlockData, changeType, changeBlockData, meta, blockData, rowUser, rowType, rowX, rowY, rowZ, rowTypeRaw, rowData, rowAction, rowWorldId, BlockUtils.unpackBlockData(rowBlockData, rowTypeRaw))) {
+                    if (RollbackBlockHandler.processBlockChange(bukkitWorld, block, row, rollbackType, clearInventories, chunkChanges, countBlock, oldTypeMaterial, pendingChangeType, pendingChangeData, finalUserString, rawBlockData, changeType, changeBlock, changeBlockData, meta, blockData, rowUser, rowType, rowX, rowY, rowZ, rowTypeRaw, rowData, rowAction, rowWorldId, BlockUtils.unpackBlockData(rowBlockData, rowTypeRaw))) {
                         blockCount++;
                     }
                 }

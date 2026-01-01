@@ -109,10 +109,7 @@ public class RollbackBlockHandler extends Queue {
      *            The block data as a string
      * @return Updated count status
      */
-    public static boolean processBlockChange(Block block, CommonLookupData row, int rollbackType, boolean clearInventories, Map<Location, BlockData> chunkChanges, boolean countBlock, Material oldTypeMaterial, Material pendingChangeType, BlockData pendingChangeData, String finalUserString, BlockData rawBlockData, Material changeType, BlockData changeBlockData, SerializedBlockMeta meta, BlockData blockData, String rowUser, Material rowType, int rowX, int rowY, int rowZ, int rowTypeRaw, int rowData, int rowAction, int rowWorldId, String blockDataString) {
-
-        boolean changeBlock = true;
-        World bukkitWorld = block.getWorld();
+    public static boolean processBlockChange(World bukkitWorld, Block block, CommonLookupData row, int rollbackType, boolean clearInventories, Map<Location, BlockData> chunkChanges, boolean countBlock, Material oldTypeMaterial, Material pendingChangeType, BlockData pendingChangeData, String finalUserString, BlockData rawBlockData, Material changeType, boolean changeBlock, BlockData changeBlockData, SerializedBlockMeta meta, BlockData blockData, String rowUser, Material rowType, int rowX, int rowY, int rowZ, int rowTypeRaw, int rowData, int rowAction, int rowWorldId, String blockDataString) {
         int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
 
         try {

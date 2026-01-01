@@ -43,6 +43,12 @@ public class EntityUtils extends Queue {
 
         int id = ConfigHandler.entities.getOrDefault(name, -1);
         if (id == -1 && internal) {
+            // Check if another server has already added this entity (multi-server setup)
+            id = ConfigHandler.reloadAndGetId(ConfigHandler.CacheType.ENTITIES, name);
+            if (id != -1) {
+                return id;
+            }
+
             id = ConfigHandler.MAX_ENTITY_ID.incrementAndGet();
             ConfigHandler.entities.put(name, id);
             ConfigHandler.entitiesReversed.put(id, name);

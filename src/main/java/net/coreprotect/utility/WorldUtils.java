@@ -16,6 +16,12 @@ public class WorldUtils extends Queue {
         Integer id = ConfigHandler.worlds.get(name);
 
         if (id == null) {
+            // Check if another server has already added this world (multi-server setup)
+            id = ConfigHandler.reloadAndGetId(ConfigHandler.CacheType.WORLDS, name);
+            if (id != -1) {
+                return id;
+            }
+
             id = ConfigHandler.MAX_WORLD_ID.incrementAndGet();
 
             ConfigHandler.worlds.put(name, id);
@@ -71,7 +77,7 @@ public class WorldUtils extends Queue {
 
         return id;
     }
-    
+
     public static String getWidIndex(String queryTable) {
         String index = "";
         boolean isMySQL = net.coreprotect.config.Config.getGlobal().MYSQL;
@@ -109,4 +115,4 @@ public class WorldUtils extends Queue {
 
         return index;
     }
-} 
+}

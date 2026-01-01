@@ -1,7 +1,10 @@
 package net.coreprotect.bukkit;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.bukkit.Color;
 import org.bukkit.DyeColor;
@@ -20,6 +23,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.MerchantRecipe;
@@ -85,6 +89,7 @@ public class BukkitAdapter implements BukkitInterface {
     }
 
     // -------------------- Basic data conversion methods --------------------
+    public static Set<Material> EMPTY_SET = new HashSet<>(Arrays.asList());
 
     @Override
     public String parseLegacyName(String name) {
@@ -349,5 +354,30 @@ public class BukkitAdapter implements BukkitInterface {
     @Override
     public Object getRegistryValue(String key, Object tClass) {
         return null;
+    }
+
+    @Override
+    public boolean isCrafter(InventoryType type) {
+        return false;
+    }
+
+    @Override
+    public boolean isCopperChest(Material material) {
+        return false;
+    }
+
+    @Override
+    public boolean isShelf(Material material){
+        return false;
+    }
+
+    @Override
+    public Set<Material> copperChestMaterials() {
+        return EMPTY_SET;
+    }
+
+    @Override
+    public Set<Material> shelfMaterials() {
+        return EMPTY_SET;
     }
 }
