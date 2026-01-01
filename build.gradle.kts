@@ -1,9 +1,9 @@
 plugins {
     `java-library`
     `maven-publish`
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.17"
-    id("com.gradleup.shadow") version "9.1.0"
-    id("xyz.jpenilla.run-paper") version "2.3.1"
+    id("io.papermc.paperweight.userdev") version "2.0.0-beta.19"
+    id("com.gradleup.shadow") version "9.3.0"
+    id("xyz.jpenilla.run-paper") version "3.0.2"
     id("com.gorylenko.gradle-git-properties") version "2.5.2"
 }
 
@@ -12,11 +12,19 @@ repositories {
 
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://repo.codemc.org/repository/maven-public/")
+    maven("https://maven.enginehub.org/repo/")
     maven("https://jitpack.io")
 }
 
 dependencies {
     paperweight.paperDevBundle("${libs.versions.minecraft.get()}-R0.1-SNAPSHOT")
+
+    // the minimal version we target with userdev may be different from the maximum supported api version
+    val paperVersion = libs.versions.paper.get()
+    if (paperVersion != libs.versions.minecraft.get()) {
+        compileOnly("io.papermc.paper:paper-api:${paperVersion}-R0.1-SNAPSHOT")
+    }
+
     implementation(libs.hikaricp) {
         exclude(group = "org.slf4j")
     }
@@ -24,7 +32,7 @@ dependencies {
     implementation(libs.bstats)
     implementation(libs.clickhouse.jdbc)
 
-    compileOnly(platform("com.intellectualsites.bom:bom-newest:1.45"))
+    compileOnly(platform("com.intellectualsites.bom:bom-newest:1.55"))
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Core")
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit") {
         exclude(group = "*", module = "FastAsyncWorldEdit-Core")
@@ -37,10 +45,15 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+configurations.all {
+    resolutionStrategy.capabilitiesResolution.withCapability("org.lz4:lz4-java") {
+        select("org.lz4:lz4-java:1.8.0") // use lz4 from clickhouse
+    }
+}
+
 java {
     sourceCompatibility = JavaVersion.VERSION_21
 
-    withJavadocJar()
     withSourcesJar()
 }
 

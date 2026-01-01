@@ -1,5 +1,6 @@
 [versions]
 minecraft = "1.21.8"
+paper = "1.21.11"
 hikaricp = "7.0.2"
 
 [libraries]
