@@ -15,7 +15,7 @@ public class ExtraNBTUtils {
         }
 
         return switch (tag) {
-            case CollectionTag collectionTag -> {
+            case CollectionTag<?> collectionTag -> {
                 for (final Tag element : collectionTag) {
                     if (!isEmpty(element, depth + 1)) {
                         yield false;
@@ -25,8 +25,9 @@ public class ExtraNBTUtils {
                 yield true;
             }
             case CompoundTag compoundTag -> {
-                for (final Tag element : compoundTag.values()) {
-                    if (!isEmpty(element, depth + 1)) {
+                for (final String key : compoundTag.getAllKeys()) {
+                    final Tag element = compoundTag.get(key);
+                    if (element == null || !isEmpty(element, depth + 1)) {
                         yield false;
                     }
                 }

@@ -23,7 +23,7 @@ import net.minecraft.nbt.ShortTag;
 import net.minecraft.nbt.SnbtPrinterTagVisitor;
 import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.TagParser;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.DefaultAttributes;
 import org.bukkit.Material;
@@ -210,7 +210,7 @@ public class EntityUtils extends Queue {
         tag.remove("FallFlying");
         tag.remove("OnGround");
 
-        if (tag.contains("last_hurt_by_mob") && tag.getStringOr("last_hurt_by_mob", "").equals(tag.getStringOr("last_hurt_by_player", ""))) {
+        if (tag.contains("last_hurt_by_mob") && tag.getString("last_hurt_by_mob").equals(tag.getString("last_hurt_by_player"))) {
             tag.remove("last_hurt_by_mob");
         }
 
@@ -221,11 +221,12 @@ public class EntityUtils extends Queue {
         tag.remove("Fire");
         tag.remove("InLove"); // what is love?
 
-        tag.getString("Paper.FireOverride").ifPresent(override -> {
-            if ("NOT_SET".equals(override)) {
+        final String fireOverride = tag.getString("Paper.FireOverride");
+        if (!fireOverride.isEmpty()) {
+            if ("NOT_SET".equals(fireOverride)) {
                 tag.remove("Paper.FireOverride");
             }
-        });
+        }
 
         for (final Map.Entry<String, Tag> entry : REMOVABLE_DEFAULTS.entrySet()) {
             if (entry.getValue().equals(tag.get(entry.getKey()))) {
@@ -244,24 +245,24 @@ public class EntityUtils extends Queue {
             final List<CompoundTag> attributesToRemove = new ArrayList<>();
 
             for (int i = 0; i < listTag.size(); i++) {
-                final CompoundTag attribute = listTag.getCompoundOrEmpty(i);
-                if (!attribute.getListOrEmpty("modifiers").isEmpty() || !attribute.contains("base")) {
+                final CompoundTag attribute = listTag.getCompound(i);
+                if (!attribute.getList("modifiers", 0).isEmpty() || !attribute.contains("base")) {
                     continue;
                 }
 
-                final String id = attribute.getStringOr("id", "");
+                final String id = attribute.getString("id");
                 if (id.isEmpty()) {
                     continue;
                 }
 
-                final Holder<net.minecraft.world.entity.ai.attributes.Attribute> attributeHolder = BuiltInRegistries.ATTRIBUTE.get(Identifier.parse(id)).orElse(null);
+                final Holder<net.minecraft.world.entity.ai.attributes.Attribute> attributeHolder = BuiltInRegistries.ATTRIBUTE.get(ResourceLocation.parse(id)).orElse(null);
                 if (attributeHolder == null) {
                     continue;
                 }
 
                 final AttributeSupplier supplier = DefaultAttributes.getSupplier((net.minecraft.world.entity.EntityType<? extends net.minecraft.world.entity.LivingEntity>) livingEntity.getType());
 
-                if (attribute.getDoubleOr("base", Double.MIN_VALUE) == supplier.getBaseValue(attributeHolder)) {
+                if (attribute.getDouble("base") == supplier.getBaseValue(attributeHolder)) {
                     attributesToRemove.add(attribute);
                 }
             }
@@ -278,7 +279,7 @@ public class EntityUtils extends Queue {
     public static Entity deserializeEntity(String entityData, World world) {
         final CompoundTag tag;
         try {
-            tag = TagParser.parseCompoundFully(entityData);
+            tag = TagParser.parseTag(entityData);
         } catch (CommandSyntaxException e) {
             throw new RuntimeException(e);
         }
