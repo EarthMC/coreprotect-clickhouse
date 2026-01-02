@@ -23,9 +23,10 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import net.coreprotect.utility.serialize.JsonSerialization;
 import org.bukkit.Bukkit;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 import net.coreprotect.CoreProtect;
 import net.coreprotect.config.Config;
@@ -190,7 +191,7 @@ public class NetworkHandler extends Language implements Runnable {
                             phrases.put("DATA_VERSION", pluginVersion);
                             phrases.put("DATA_LANGUAGE", languageCode);
 
-                            String mapString = "data=" + JSONObject.toJSONString(phrases);
+                            String mapString = "data=" + JsonSerialization.DEFAULT_GSON.toJson(phrases);
                             mapString = mapString.replaceAll("\\+", "{PLUS_SIGN}");
                             byte[] postData = mapString.getBytes(StandardCharsets.UTF_8);
                             int postDataLength = postData.length;
@@ -225,12 +226,11 @@ public class NetworkHandler extends Language implements Runnable {
                                     String response = responseBuilder.toString();
                                     if (response.length() > 0 && response.startsWith("{") && response.endsWith("}")) {
                                         TreeMap<Phrase, String> translatedPhrases = new TreeMap<>();
-                                        JSONParser parser = new JSONParser();
-                                        JSONObject json = (JSONObject) parser.parse(response);
-                                        for (Object jsonKey : json.keySet()) {
-                                            String key = (String) jsonKey;
-                                            String value = ((String) json.get(jsonKey)).trim();
-                                            if (phraseSet.contains(key) && value.length() > 0) {
+                                        final JsonObject json = JsonSerialization.DEFAULT_GSON.fromJson(response, JsonObject.class);
+                                        for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
+                                            String key = entry.getKey();
+                                            String value = entry.getValue().getAsString();
+                                            if (phraseSet.contains(key) && !value.isEmpty()) {
                                                 Phrase phrase = Phrase.valueOf(key);
                                                 translatedPhrases.put(phrase, value);
                                                 Language.setTranslatedPhrase(phrase, value);

@@ -32,7 +32,7 @@ dependencies {
     implementation(libs.bstats)
     implementation(libs.clickhouse.jdbc)
 
-    compileOnly(platform("com.intellectualsites.bom:bom-newest:1.55"))
+    compileOnly(platform("com.intellectualsites.bom:bom-newest:1.45"))
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Core")
     compileOnly("com.fastasyncworldedit:FastAsyncWorldEdit-Bukkit") {
         exclude(group = "*", module = "FastAsyncWorldEdit-Core")

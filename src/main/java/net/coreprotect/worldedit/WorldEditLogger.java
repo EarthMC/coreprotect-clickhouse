@@ -2,6 +2,8 @@ package net.coreprotect.worldedit;
 
 import java.util.Locale;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import org.bukkit.DyeColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -14,8 +16,6 @@ import org.bukkit.block.data.Waterlogged;
 import org.bukkit.entity.EntityType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 import com.sk89q.jnbt.CompoundTag;
 import com.sk89q.jnbt.NBTUtils;
@@ -182,8 +182,8 @@ public class WorldEditLogger extends Queue {
         }
 
         try {
-            JSONObject json = (JSONObject) new JSONParser().parse(line);
-            return (String) json.get("text");
+            final JsonObject object = new Gson().fromJson(line, JsonObject.class);
+            return object.get("line").getAsString();
         }
         catch (Exception e) {
             e.printStackTrace();
