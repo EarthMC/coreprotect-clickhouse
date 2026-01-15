@@ -4,6 +4,8 @@ import net.coreprotect.CoreProtect;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.database.Database;
 import net.coreprotect.database.convert.ClickhouseConverter;
+import net.coreprotect.database.convert.ClickhouseConverter.MySQLLoginInformation;
+import net.coreprotect.database.convert.ClickhouseConverter.SQLiteDatabaseInformation;
 import net.coreprotect.database.convert.TableData;
 import net.coreprotect.database.convert.process.ConvertOptions;
 import net.coreprotect.database.convert.process.CorruptResultRowException;
@@ -41,8 +43,8 @@ public class ConvertCommand {
         }
 
         if (args.length == 0) {
-            if (converter.mysqlAddress() == null || converter.mysqlDatabase() == null || converter.mysqlUser() == null || converter.mysqlPassword() == null) {
-                sender.sendMessage(Component.text("Remote mysql database to import from has not been connected yet, use /co convert login <address> <database> <username> <password>", NamedTextColor.RED));
+            if (converter.databaseAccess() == null) {
+                sender.sendMessage(Component.text("Remote mysql database to import from has not been connected yet, use /co convert login [mysql|sqlite] [<address> <database> <username> <password>|<database path>]", NamedTextColor.RED));
                 return;
             }
 
@@ -67,12 +69,32 @@ public class ConvertCommand {
 
         switch (args[0].toLowerCase(Locale.ROOT)) {
             case "login" -> {
-                if (args.length != 5) {
-                    sender.sendMessage(Component.text("Usage: /co convert login <address> <database> <username> <password>", NamedTextColor.RED));
+                if (args.length < 2) {
+                    sender.sendMessage(Component.text("Usage: /co convert login [mysql|sqlite] [<address> <database> <username> <password>|<database path>]", NamedTextColor.RED));
                     return;
                 }
 
-                converter.login(args[1], args[2], args[3], args[4]);
+                final String databaseType = args[1];
+
+                if ("mysql".equalsIgnoreCase(databaseType)) {
+                    if (args.length != 6) {
+                        sender.sendMessage(Component.text("Usage: /co convert login mysql <address> <database> <username> <password>", NamedTextColor.RED));
+                        return;
+                    }
+
+                    converter.login(new MySQLLoginInformation(args[2], args[3], args[4], args[5]));
+                } else if ("sqlite".equalsIgnoreCase(databaseType)) {
+                    if (args.length != 3) {
+                        sender.sendMessage(Component.text("Usage: /co convert login sqlite <database path>", NamedTextColor.RED));
+                        return;
+                    }
+
+                    converter.login(new SQLiteDatabaseInformation(args[2]));
+                } else {
+                    sender.sendMessage(Component.text("Unknown database type '" + databaseType + "', valid options are mysql and sqlite.", NamedTextColor.RED));
+                    return;
+                }
+
                 final TableData versionTable = converter.getTable("version");
 
                 try (Connection connection = Database.getConnection(false);
@@ -92,7 +114,24 @@ public class ConvertCommand {
                     converter.logger().error("Failed to connect to the mysql database using the provided credentials.", e);
                 }
             }
+            case "logout" -> {
+                if (converter.databaseAccess() == null) {
+                    sender.sendMessage(Component.text("No login credentials are currently saved.", NamedTextColor.RED));
+                    return;
+                }
+
+                converter.login(null);
+                converter.saveCredentials();
+
+                sender.sendMessage(Component.text("Saved credentials have successfully been deleted from memory & disk.", NamedTextColor.GREEN));
+            }
             case "prepare" -> {
+                final ClickhouseConverter.DatabaseAccess access = converter.databaseAccess();
+                if (access == null) {
+                    sender.sendMessage(Component.text("No remote database has been defined yet, use /co convert login first.", NamedTextColor.RED));
+                    return;
+                }
+
                 sender.sendMessage(Component.text("Preparing row numbers...", NamedTextColor.GREEN));
 
                 Scheduler.runTaskAsynchronously(CoreProtect.getInstance(), () -> {
@@ -101,9 +140,13 @@ public class ConvertCommand {
 
                         for (final TableData table : converter.getTables().values()) {
                             converter.logger().info("Querying row count for table {}...", table.fullName());
-                            try (PreparedStatement ps = connection.prepareStatement("SELECT AUTO_INCREMENT FROM mysql('" + converter.mysqlAddress() + "', 'information_schema', 'TABLES', '" + converter.mysqlUser() + "', '" + converter.mysqlPassword() + "') WHERE TABLE_SCHEMA = '" + converter.mysqlDatabase() + "' AND TABLE_NAME = '" + table.fullName() + "'")) {
-                                final ResultSet rs = ps.executeQuery();
 
+                            final PreparedStatement ps = connection.prepareStatement(switch (access) {
+                                case MySQLLoginInformation(String address, String database, String user, String password) -> "SELECT AUTO_INCREMENT FROM mysql('" + address + "', 'information_schema', 'TABLES', '" + user + "', '" + password + "') WHERE TABLE_SCHEMA = '" + database + "' AND TABLE_NAME = '" + table.fullName() + "'";
+                                case SQLiteDatabaseInformation ignored -> "SELECT MAX(rowid) + 1 FROM " + converter.formatMysqlSource(table);
+                            });
+
+                            try (ps; final ResultSet rs = ps.executeQuery()) {
                                 if (rs.next()) {
                                     counts.put(table.getName(), rs.getLong(1));
                                     converter.logger().info("Max row number from table {}: {}", table.fullName(), rs.getLong(1));

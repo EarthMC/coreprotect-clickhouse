@@ -39,13 +39,7 @@ import java.util.Map;
 public class ClickhouseConverter {
     private static final Logger LOGGER = LoggerFactory.getLogger(ClickhouseConverter.class);
 
-    private String mysqlAddress;
-    private String mysqlDatabase;
-    private String mysqlUser;
-    private String mysqlPassword;
-
-    private boolean sqlite = false;
-    private String sqliteDatabasePath = "";
+    private DatabaseAccess databaseAccess = null;
 
     private final Map<String, TableData> tables = new LinkedHashMap<>();
     private final Path credentialsPath;
@@ -74,12 +68,7 @@ public class ClickhouseConverter {
         this.credentialsPath = plugin.getDataPath().resolve("mysql-credentials.json");
         if (Files.exists(credentialsPath)) {
             try {
-                final MySQLLoginInformation information = JsonSerialization.DEFAULT_GSON.fromJson(Files.readString(credentialsPath), MySQLLoginInformation.class);
-
-                this.mysqlAddress = information.address;
-                this.mysqlDatabase = information.database;
-                this.mysqlUser = information.user;
-                this.mysqlPassword = information.password;
+                this.databaseAccess = JsonSerialization.DEFAULT_GSON.fromJson(Files.readString(credentialsPath), MySQLLoginInformation.class);
             } catch (IOException | JsonSyntaxException e) {
                 LOGGER.warn("Failed to read saved credentials file", e);
             }
@@ -88,10 +77,7 @@ public class ClickhouseConverter {
             final Path path = plugin.getDataPath().resolve("sqlite-database.json");
 
             try {
-                final SQLiteDatabaseInformation information = JsonSerialization.DEFAULT_GSON.fromJson(Files.readString(path), SQLiteDatabaseInformation.class);
-
-                this.sqlite = true;
-                this.sqliteDatabasePath = information.databasePath;
+                this.databaseAccess = JsonSerialization.DEFAULT_GSON.fromJson(Files.readString(path), SQLiteDatabaseInformation.class);
             } catch (IOException | JsonSyntaxException e) {
                 LOGGER.warn("Failed to read sqlite database path", e);
             }
@@ -102,35 +88,20 @@ public class ClickhouseConverter {
         this.tables.put(table.getName(), table);
     }
 
-    public String mysqlAddress() {
-        return this.mysqlAddress;
+    public void login(DatabaseAccess databaseAccess) {
+        this.databaseAccess = databaseAccess;
     }
 
-    public String mysqlUser() {
-        return this.mysqlUser;
-    }
-
-    public String mysqlPassword() {
-        return this.mysqlPassword;
-    }
-
-    public String mysqlDatabase() {
-        return this.mysqlDatabase;
-    }
-
-    public void login(String address, String database, String username, String password) {
-        this.mysqlAddress = address;
-        this.mysqlDatabase = database;
-        this.mysqlUser = username;
-        this.mysqlPassword = password;
+    public DatabaseAccess databaseAccess() {
+        return this.databaseAccess;
     }
 
     public String formatMysqlSource(TableData table) {
-        if (this.sqlite) {
-            return "sqlite('" + this.sqliteDatabasePath + "', " + table.fullName() + "')";
-        }
-
-        return "mysql('" + mysqlAddress + "', '" + mysqlDatabase + "', '" + table.fullName() + "', '" + mysqlUser + "', '" + mysqlPassword + "')";
+        return switch (this.databaseAccess) {
+            case SQLiteDatabaseInformation sqlite -> "sqlite('" + sqlite.databasePath + "', " + table.fullName() + "')";
+            case MySQLLoginInformation mysql -> "mysql('" + mysql.address + "', '" + mysql.database + "', '" + table.fullName() + "', '" + mysql.user + "', '" + mysql.password + "')";
+            case null -> throw new IllegalStateException("No database source provided for the converter to use, use /co convert login ");
+        };
     }
 
     public Logger logger() {
@@ -147,7 +118,12 @@ public class ClickhouseConverter {
 
     public void saveCredentials() {
         try {
-            Files.writeString(this.credentialsPath, JsonSerialization.DEFAULT_GSON.toJson(new MySQLLoginInformation(this.mysqlAddress, this.mysqlDatabase, this.mysqlUser, this.mysqlPassword)));
+            if (this.databaseAccess == null) {
+                Files.deleteIfExists(this.credentialsPath);
+                return;
+            }
+
+            Files.writeString(this.credentialsPath, JsonSerialization.DEFAULT_GSON.toJson(this.databaseAccess));
         } catch (IOException e) {
             LOGGER.warn("Failed to write mysql credentials to disk", e);
         }
@@ -175,7 +151,9 @@ public class ClickhouseConverter {
         }
     }
 
-    private record MySQLLoginInformation(String address, String database, String user, String password) {}
+    public sealed interface DatabaseAccess permits MySQLLoginInformation, SQLiteDatabaseInformation {}
 
-    private record SQLiteDatabaseInformation(String databasePath) {}
+    public record MySQLLoginInformation(String address, String database, String user, String password) implements DatabaseAccess {}
+
+    public record SQLiteDatabaseInformation(String databasePath) implements DatabaseAccess {}
 }

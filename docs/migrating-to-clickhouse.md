@@ -1,10 +1,10 @@
 # Migrating to coreprotect-clickhouse
 ###### *Note: This guide is written for and tested with version 22.4 of CoreProtect, and version 1.21.4 of Minecraft*
 
-This guide walks you through importing an existing CoreProtect database in MySQL into ClickHouse. Importing SQLite data is not supported, as support for that is dropped completely in this fork.
+This guide walks you through importing an existing CoreProtect database into ClickHouse.
 
 ## Prerequisites
-- A functional ClickHouse server that is able to connect to your MySQL server using password authentication.
+- A functional ClickHouse server that is able to connect to your MySQL server using password authentication or reach the path of your SQLite database.
 - Time.
 
 ## 1. System Properties
@@ -29,22 +29,22 @@ A new config option added by this fork is `clickhouse-partitioning`, this option
 If you decide to change this option, the tables that use partitioning will have to be re-created for it to take effect.
 
 ## 3. The `/co convert` command
-In order to make the actual migration possible, a new /co convert command is added that is usable by console.
+In order to make the actual migration possible, a new /co convert command is added that is only usable by console.
 
 ### Logging in
-To get started, you must first log in to your MySQL server containing the CoreProtect data using the `/co convert login <address> <database> <username> <password>` command. The plugin will then attempt
-to connect to your MySQL database and will print its CoreProtect upon connecting successfully.
+To get started, you must first log in to your database server containing the CoreProtect data using the `/co convert login [mysql|sqlite] [<address> <database> <username> <password>|<database path>]` command. The plugin will then attempt
+to connect to your database and will print its CoreProtect version upon connecting successfully.
 
 You can check your login status at any time by using `/co convert` (no arguments).
 
 > [!WARNING]  
-> Login credentials are automatically persisted in the `mysql-credentials.json` file, you should delete this file once you are done with the migration.
+> MySQL login credentials are automatically persisted in the `mysql-credentials.json` file, you should delete this file once you are done with the migration or use /co convert logout to do so automatically.
 
 ### Preparing the `row-numbers.json` file
 In order to stay compatible with CoreProtect's API/ABI, MySQL's auto increment feature is simulated by keeping track of counters for each table locally. These row counts must be populated manually
-using the `/co prepare` command in order to prevent multiple rows in a table from having the same row id.
+using the `/co convert prepare` command in order to prevent multiple rows in a table from having the same row id.
 
-This functionality may be replaced in the future by randomly generated snowflakes, which are better suited for this sort of thing.
+On large SQLite databases this command may take longer due to it not being able to directly query the performance schema like it is with MySQL.
 
 ## 4. Table migration order
 
