@@ -1,21 +1,36 @@
 package net.coreprotect.utility;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.papermc.paper.entity.EntitySerializationFlag;
-import net.coreprotect.utility.serialize.JsonEntitySerializer;
-import net.coreprotect.utility.serialize.JsonSerialization;
+import net.coreprotect.utility.serialize.EntitySerializer;
+import net.coreprotect.utility.serialize.ExtraNBTUtils;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.ByteTag;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.FloatTag;
+import net.minecraft.nbt.IntTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.ShortTag;
+import net.minecraft.nbt.SnbtPrinterTagVisitor;
+import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.TagParser;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.DefaultAttributes;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.craftbukkit.entity.CraftEntity;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 
@@ -146,82 +161,123 @@ public class EntityUtils extends Queue {
         return result;
     }
 
-    private static final Map<String, Integer> REMOVABLE_DEFAULTS = Util.make(new HashMap<>(), map -> {
-            map.put("AbsorptionAmount", 0);
-            map.put("Age", 0);
-            map.put("AgeLocked", 0);
-            map.put("CanPickUpLoot", 0);
-            map.put("ForcedAge", 0);
-            map.put("Health", 0);
-            map.put("PersistenceRequired", 0);
-            map.put("LeftHanded", 0);
-            map.put("Invulnerable", 0);
-            map.put("BatFlags", 0);
-            map.put("IsBaby", 0);
-            map.put("Air", 300);
-            map.put("Bukkit.Aware", 1);
-            map.put("Bukkit.updateLevel", 2);
-            map.put("FallDistance", 0);
-            map.put("FromBucket", 0);
-            map.put("DrownedConversionTime", -1);
-            map.put("InWaterTime", 0);
+    private static final Map<String, Tag> REMOVABLE_DEFAULTS = Util.make(new HashMap<>(), map -> {
+        map.put("AbsorptionAmount", FloatTag.valueOf(0));
+        map.put("Age", IntTag.valueOf(0));
+        map.put("AgeLocked", ByteTag.valueOf(false));
+        map.put("CanPickUpLoot", ByteTag.valueOf(false));
+        map.put("ForcedAge", IntTag.valueOf(0));
+        map.put("Health", FloatTag.valueOf(0));
+        map.put("PersistenceRequired", ByteTag.valueOf(false));
+        map.put("LeftHanded", ByteTag.valueOf(false));
+        map.put("Invulnerable", ByteTag.valueOf(false));
+        map.put("BatFlags", ByteTag.valueOf(false));
+        map.put("IsBaby", ByteTag.valueOf(false));
+        map.put("Air", ShortTag.valueOf((short) 300));
+        map.put("Bukkit.Aware", ByteTag.valueOf(true));
+        map.put("Bukkit.updateLevel", IntTag.valueOf(2));
+        map.put("FromBucket", ByteTag.valueOf(false));
+        map.put("DrownedConversionTime", IntTag.valueOf(-1));
+        map.put("InWaterTime", IntTag.valueOf(-1));
+        map.put("CanBreakDoors", ByteTag.valueOf(false));
+        map.put("PatrolLeader", ByteTag.valueOf(false));
+        map.put("IsChickenJockey", ByteTag.valueOf(false));
     });
 
-    private static final Set<String> SKIP_EMPTY_ELEMENTS = Set.of("ArmorItems", "HandItems");
+    private static final Set<String> SKIP_EMPTY_ELEMENTS = Set.of("ArmorItems", "HandItems", "Brain", "Inventory");
 
     public static String serializeEntity(Entity entity) {
-        final JsonObject object = JsonEntitySerializer.serializeEntityAsJson(entity, EntitySerializationFlag.FORCE);
+        final CompoundTag tag = EntitySerializer.serializeEntityAsNBT(entity, EntitySerializationFlag.FORCE);
 
         // remove things we do not care about
-        object.remove("WorldUUIDLeast");
-        object.remove("WorldUUIDMost");
-        object.remove("Motion");
-        object.remove("UUID");
-        object.remove("HurtTime");
-        object.remove("fall_distance");
-        object.remove("HurtByTimestamp");
-        object.remove("FallFlying");
-        object.remove("OnGround");
+        tag.remove("WorldUUIDLeast");
+        tag.remove("WorldUUIDMost");
+        tag.remove("Motion");
+        tag.remove("UUID");
+        tag.remove("HurtTime");
+        tag.remove("fall_distance");
+        tag.remove("FallDistance");
+        tag.remove("HurtByTimestamp");
+        tag.remove("FallFlying");
+        tag.remove("OnGround");
 
-        if (object.has("last_hurt_by_mob") && object.get("last_hurt_by_mob").equals(object.get("last_hurt_by_player"))) {
-            object.remove("last_hurt_by_mob");
+        if (tag.contains("last_hurt_by_mob") && tag.getStringOr("last_hurt_by_mob", "").equals(tag.getStringOr("last_hurt_by_player", ""))) {
+            tag.remove("last_hurt_by_mob");
         }
 
-        object.remove("last_hurt_by_player_memory_time");
-        object.remove("ticks_since_last_hurt_by_mob");
-        object.remove("PortalCooldown");
-        object.remove("DeathTime");
-        object.remove("Fire");
-        object.remove("InLove"); // what is love?
+        tag.remove("last_hurt_by_player_memory_time");
+        tag.remove("ticks_since_last_hurt_by_mob");
+        tag.remove("PortalCooldown");
+        tag.remove("DeathTime");
+        tag.remove("Fire");
+        tag.remove("InLove"); // what is love?
 
-        if (object.has("Paper.FireOverride") && "NOT_SET".equals(object.get("Paper.FireOverride").getAsString())) {
-            object.remove("Paper.FireOverride");
+        tag.getString("Paper.FireOverride").ifPresent(override -> {
+            if ("NOT_SET".equals(override)) {
+                tag.remove("Paper.FireOverride");
+            }
+        });
+
+        for (final Map.Entry<String, Tag> entry : REMOVABLE_DEFAULTS.entrySet()) {
+            if (entry.getValue().equals(tag.get(entry.getKey()))) {
+                tag.remove(entry.getKey());
+            }
         }
 
-        for (final Map.Entry<String, Integer> entry : REMOVABLE_DEFAULTS.entrySet()) {
-            if (object.get(entry.getKey()) instanceof JsonPrimitive primitive) {
-                if (primitive.isNumber() && primitive.getAsInt() == entry.getValue()) {
-                    object.remove(entry.getKey());
+        for (final String tagName : SKIP_EMPTY_ELEMENTS) {
+            if (tag.get(tagName) instanceof Tag maybeEmpty && ExtraNBTUtils.isEmpty(maybeEmpty)) {
+                tag.remove(tagName);
+            }
+        }
+
+        // remove attributes with no modifiers and the default base value
+        if (((CraftEntity) entity).getHandle() instanceof net.minecraft.world.entity.LivingEntity livingEntity && tag.get("attributes") instanceof ListTag listTag) {
+            final List<CompoundTag> attributesToRemove = new ArrayList<>();
+
+            for (int i = 0; i < listTag.size(); i++) {
+                final CompoundTag attribute = listTag.getCompoundOrEmpty(i);
+                if (!attribute.getListOrEmpty("modifiers").isEmpty() || !attribute.contains("base")) {
+                    continue;
+                }
+
+                final String id = attribute.getStringOr("id", "");
+                if (id.isEmpty()) {
+                    continue;
+                }
+
+                final Holder<net.minecraft.world.entity.ai.attributes.Attribute> attributeHolder = BuiltInRegistries.ATTRIBUTE.get(ResourceLocation.parse(id)).orElse(null);
+                if (attributeHolder == null) {
+                    continue;
+                }
+
+                final AttributeSupplier supplier = DefaultAttributes.getSupplier((net.minecraft.world.entity.EntityType<? extends net.minecraft.world.entity.LivingEntity>) livingEntity.getType());
+
+                if (attribute.getDoubleOr("base", Double.MIN_VALUE) == supplier.getBaseValue(attributeHolder)) {
+                    attributesToRemove.add(attribute);
                 }
             }
-        }
 
-        for (final String arrayName : SKIP_EMPTY_ELEMENTS) {
-            final JsonElement element = object.get(arrayName);
-            if (element != null && JsonSerialization.isEmpty(element)) {
-                object.remove(arrayName);
+            for (final CompoundTag attribute : attributesToRemove) {
+                listTag.remove(attribute);
             }
         }
 
-        return JsonSerialization.DEFAULT_GSON.toJson(JsonSerialization.encodeKeys(object));
+        final String snbt = new SnbtPrinterTagVisitor().visit(tag);
+        return snbt.replaceAll("[\n ]", "");
     }
 
     public static Entity deserializeEntity(String entityData, World world) {
-        final JsonObject object = JsonSerialization.decodeKeys(JsonSerialization.DEFAULT_GSON.fromJson(entityData, JsonObject.class));
-        final Entity entity = JsonEntitySerializer.deserializeEntityFromJson(object, world);
+        final CompoundTag tag;
+        try {
+            tag = TagParser.parseCompoundFully(entityData);
+        } catch (CommandSyntaxException e) {
+            throw new RuntimeException(e);
+        }
+
+        final Entity entity = EntitySerializer.deserializeEntityFromNBT(tag, world);
 
         if (entity instanceof LivingEntity livingEntity && livingEntity.getHealth() <= 0) {
-            livingEntity.setHealth(Optional.ofNullable(livingEntity.getAttribute(Attribute.MAX_HEALTH)).map(AttributeInstance::getValue).orElse(20D));
+            livingEntity.setHealth(Optional.ofNullable(livingEntity.getAttribute(Attribute.MAX_HEALTH)).map(AttributeInstance::getBaseValue).orElse(20D));
         }
 
         return entity;

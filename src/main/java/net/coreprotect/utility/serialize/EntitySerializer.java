@@ -2,13 +2,10 @@ package net.coreprotect.utility.serialize;
 
 import ca.spottedleaf.moonrise.common.PlatformHooks;
 import com.google.common.base.Preconditions;
-import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import com.mojang.serialization.JsonOps;
 import io.papermc.paper.entity.EntitySerializationFlag;
 import net.minecraft.SharedConstants;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -29,24 +26,21 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-// Based on https://github.com/Warriorrrr/Paper/commit/acba85eac5a5c37577916d4561e593d38bb0573f
-public class JsonEntitySerializer {
+public class EntitySerializer {
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public static @NotNull JsonObject serializeEntityAsJson(@NotNull final Entity entity, final @NotNull EntitySerializationFlag... serializationFlags) {
+    public static @NotNull CompoundTag serializeEntityAsNBT(@NotNull final Entity entity, final @NotNull EntitySerializationFlag... serializationFlags) {
         Preconditions.checkArgument(entity != null, "entity must not be null");
 
         final CompoundTag nbt = serializeEntityToNbt(entity, serializationFlags);
         nbt.putInt("DataVersion", SharedConstants.getCurrentVersion().dataVersion().version());
 
-        return NbtOps.INSTANCE.convertTo(JsonOps.INSTANCE, nbt).getAsJsonObject();
+        return nbt;
     }
 
-    public static @NotNull Entity deserializeEntityFromJson(@NotNull JsonObject object, @NotNull World world) {
-        Preconditions.checkArgument(object != null, "json object must not be null");
+    public static @NotNull Entity deserializeEntityFromNBT(@NotNull final CompoundTag tag, @NotNull World world) {
+        Preconditions.checkArgument(tag != null, "nbt tag must not be null");
         Preconditions.checkArgument(world != null, "world must not be null");
-
-        final CompoundTag tag = (CompoundTag) JsonOps.INSTANCE.convertTo(NbtOps.INSTANCE, object);
 
         return deserializeEntityFromNbt(tag, world, false, false);
     }
