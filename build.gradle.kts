@@ -5,6 +5,7 @@ plugins {
     id("com.gradleup.shadow") version "9.3.0"
     id("xyz.jpenilla.run-paper") version "3.0.2"
     id("com.gorylenko.gradle-git-properties") version "2.5.2"
+    id("net.earthmc.conventions.publishing") version "1.0.8"
 }
 
 repositories {
@@ -14,6 +15,15 @@ repositories {
     maven("https://repo.codemc.org/repository/maven-public/")
     maven("https://maven.enginehub.org/repo/")
     maven("https://jitpack.io")
+}
+
+earthmc {
+    mainBranch = "master"
+
+    publishing {
+        public = true
+        javadoc = false // javadoc creation is broken, it seems to be pulling in something from paperweight
+    }
 }
 
 dependencies {
@@ -53,8 +63,6 @@ configurations.all {
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
-
-    withSourcesJar()
 }
 
 tasks {
@@ -118,25 +126,4 @@ tasks.withType(xyz.jpenilla.runtask.task.AbstractRun::class) {
 
 gitProperties {
     keys = listOf("git.branch", "git.commit.id", "git.commit.id.abbrev", "git.remote.origin.url", "git.commit.message.short")
-}
-
-publishing {
-    shadow.addShadowVariantIntoJavaComponent = false
-
-    repositories {
-        maven {
-            val releasesUrl = "https://repo.earthmc.net/releases"
-            val snapshotsUrl = "https://repo.earthmc.net/snapshots"
-            url = uri(if (project.version.toString().endsWith("-SNAPSHOT")) snapshotsUrl else releasesUrl)
-
-            name = "earthmc"
-            credentials(PasswordCredentials::class)
-        }
-    }
-
-    publications {
-        create<MavenPublication>("maven") {
-            from(components.getByName("java"))
-        }
-    }
 }
