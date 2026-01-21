@@ -23,7 +23,7 @@ import net.minecraft.nbt.ShortTag;
 import net.minecraft.nbt.SnbtPrinterTagVisitor;
 import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.TagParser;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.DefaultAttributes;
 import org.bukkit.Material;
@@ -245,7 +245,7 @@ public class EntityUtils extends Queue {
                     continue;
                 }
 
-                final Holder<net.minecraft.world.entity.ai.attributes.Attribute> attributeHolder = BuiltInRegistries.ATTRIBUTE.get(ResourceLocation.parse(id)).orElse(null);
+                final Holder<net.minecraft.world.entity.ai.attributes.Attribute> attributeHolder = BuiltInRegistries.ATTRIBUTE.get(Identifier.parse(id)).orElse(null);
                 if (attributeHolder == null) {
                     continue;
                 }

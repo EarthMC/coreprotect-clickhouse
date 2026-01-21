@@ -139,7 +139,7 @@ public class EntitySerializer {
                     continue;
                 }
                 final net.minecraft.world.entity.Entity passengerEntity = deserializeEntity(serializedPassenger, world, preserveUUID);
-                passengerEntity.startRiding(nmsEntity, true);
+                passengerEntity.startRiding(nmsEntity, true, true);
             }
         });
         return nmsEntity;
