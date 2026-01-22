@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import net.coreprotect.thread.Scheduler;
 import org.bukkit.GameEvent;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -322,11 +323,11 @@ public final class CopperGolemChestListener implements Listener {
     }
 
     private void scheduleCloseFinalize(UUID golemId, OpenInteraction interaction, TransactionKey containerKey, int attempt) {
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> finalizeContainerClose(golemId, interaction, containerKey, attempt), CLOSE_FINALIZE_DELAY_TICKS);
+        Scheduler.scheduleSyncDelayedTask(plugin, () -> finalizeContainerClose(golemId, interaction, containerKey, attempt), interaction.location, (int) CLOSE_FINALIZE_DELAY_TICKS);
     }
 
     private void scheduleUntrackedCopperChestCloseFinalize(UUID golemId, Location containerLocation, Material containerType, int attempt) {
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> finalizeUntrackedCopperChestClose(golemId, containerLocation, containerType, attempt), CLOSE_FINALIZE_DELAY_TICKS);
+        Scheduler.scheduleSyncDelayedTask(plugin, () -> finalizeUntrackedCopperChestClose(golemId, containerLocation, containerType, attempt), containerLocation, (int) CLOSE_FINALIZE_DELAY_TICKS);
     }
 
     private void finalizeContainerClose(UUID golemId, OpenInteraction interaction, TransactionKey containerKey, int attempt) {
