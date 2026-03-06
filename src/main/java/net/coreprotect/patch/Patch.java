@@ -239,13 +239,17 @@ public class Patch {
             if (newVersion && lastVersion[0] > 0 && !ConfigHandler.converterRunning) {
                 Integer[] minimumVersion = new Integer[] { 2, 0, 0 };
                 if (VersionUtils.newVersion(lastVersion, minimumVersion)) {
+                    // spotless:off
                     Chat.sendConsoleMessage("§c[CoreProtect] " + Phrase.build(Phrase.PATCH_OUTDATED_1, "v" + minimumVersion[0] + "." + minimumVersion[1] + "." + minimumVersion[2]));
                     Chat.sendConsoleMessage("§c[CoreProtect] " + Phrase.build(Phrase.PATCH_OUTDATED_2));
+                    // spotless:on
                     return false;
                 }
 
                 if (ConfigHandler.EDITION_BRANCH.contains("-dev") && false) {
+                    // spotless:off
                     Chat.sendConsoleMessage("§e[CoreProtect] " + Phrase.build(Phrase.DEVELOPMENT_BRANCH));
+                    // spotless:on
                     return true;
                 }
 
@@ -303,7 +307,7 @@ public class Patch {
             }
             else if (lastVersion[0] == 0) {
                 int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
-                statement.executeUpdate("INSERT INTO " + ConfigHandler.prefix + "version (time,version) VALUES ('" + unixtimestamp + "', '" + currentVersion[0] + "." + (ConfigHandler.EDITION_BRANCH.contains("-dev") ? (currentVersion[1] - 1) : currentVersion[1]) + "." + currentVersion[2] + "')");
+                statement.executeUpdate("INSERT INTO " + ConfigHandler.prefix + "version (time,version) VALUES ('" + unixtimestamp + "', '" + currentVersion[0] + "." + currentVersion[1] + "." + currentVersion[2] + "')");
             }
             else {
                 currentVersion[2] = 0;
