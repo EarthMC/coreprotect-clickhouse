@@ -1,5 +1,6 @@
 package net.coreprotect.database.lookup;
 
+import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.database.statement.UserStatement;
 import net.coreprotect.language.Phrase;
@@ -62,6 +63,10 @@ public class BlockLookup {
             String blockName = block.getType().name().toLowerCase(Locale.ROOT);
 
             String query = "SELECT count(*) over () as count, time,user,action,type,data,rolled_back FROM " + ConfigHandler.prefix + "block WHERE wid = '" + worldId + "' AND x = '" + x + "' AND z = '" + z + "' AND y = '" + y + "' AND action IN(0,1) AND time >= '" + checkTime + "' ORDER BY rowid DESC LIMIT " + limit + " OFFSET " + page_start;
+
+            if (Config.getGlobal().SELECT_USE_FINAL) {
+                query += " SETTINGS final = 1";
+            }
 
             try (ResultSet results = statement.executeQuery(query)) {
                 StringBuilder resultTextBuilder = new StringBuilder();

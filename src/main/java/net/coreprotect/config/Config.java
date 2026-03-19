@@ -40,6 +40,7 @@ public class Config extends Language {
     public String MYSQL_USERNAME;
     public String MYSQL_PASSWORD;
     public String PARTITIONING;
+    public boolean SELECT_USE_FINAL;
     public String LANGUAGE;
     public boolean ENABLE_SSL;
     public boolean DISABLE_WAL;
@@ -103,6 +104,7 @@ public class Config extends Language {
         DEFAULT_VALUES.put("mysql-username", "default");
         DEFAULT_VALUES.put("mysql-password", "");
         DEFAULT_VALUES.put("clickhouse-partitioning", "toStartOfInterval(parseDateTimeBestEffort(toString(time), 0, 'UTC'), toIntervalQuarter(2))");
+        DEFAULT_VALUES.put("clickhouse-use-select-final", "true");
         DEFAULT_VALUES.put("database-lock", "false");
         DEFAULT_VALUES.put("language", "en");
         DEFAULT_VALUES.put("check-updates", "true");
@@ -148,6 +150,7 @@ public class Config extends Language {
         HEADERS.put("donation-key", new String[] { "# CoreProtect is donationware. Obtain a donation key from coreprotect.net/donate/" });
         HEADERS.put("use-mysql", new String[] { "# MySQL is optional and not required.", "# If you prefer to use MySQL, enable the following and fill out the fields." });
         HEADERS.put("clickhouse-partitioning", new String[] { "# The partitioning to use for the major tables, used when tables are initially created." });
+        HEADERS.put("clickhouse-use-select-final", new String[] { "# Whether to use the final modifier when querying data from the database, prevents duplicate records in lookups directly following a rollback, at the cost of being slightly slower than normal.", "# See https://clickhouse.com/docs/sql-reference/statements/select/from#final-modifier for reference." });
         HEADERS.put("database-lock", new String[] { "# Whether to utilize database locking, preventing two servers from accidentally using the same database.", "# This functionality does not work well with ClickHouse due to it causing a large amount of mutations." });
         HEADERS.put("language", new String[] { "# If modified, will automatically attempt to translate languages phrases.", "# List of language codes: https://coreprotect.net/languages/" });
         HEADERS.put("check-updates", new String[] { "# If enabled, CoreProtect will check for updates when your server starts up.", "# If an update is available, you'll be notified via your server console.", });
@@ -211,6 +214,7 @@ public class Config extends Language {
         this.MYSQL_USERNAME = this.getString("mysql-username");
         this.MYSQL_PASSWORD = this.getString("mysql-password");
         this.PARTITIONING = this.getString("clickhouse-partitioning");
+        this.SELECT_USE_FINAL = this.getBoolean("clickhouse-use-select-final", true);
         this.LANGUAGE = this.getString("language");
         this.CHECK_UPDATES = this.getBoolean("check-updates");
         this.API_ENABLED = this.getBoolean("api-enabled");

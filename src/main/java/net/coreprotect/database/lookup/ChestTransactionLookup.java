@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import net.coreprotect.config.Config;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -66,6 +67,10 @@ public class ChestTransactionLookup {
             }
 
             String query = "SELECT count(*) over () as count,time,user,action,type,data,amount,toString(metadata) as metadata,rolled_back FROM " + ConfigHandler.prefix + "container WHERE wid = '" + worldId + "' AND " + locationFilter + " ORDER BY rowid DESC LIMIT " + limit + " OFFSET " + pageStart + " SETTINGS output_format_json_quote_64bit_integers=0";
+
+            if (Config.getGlobal().SELECT_USE_FINAL) {
+                query += " SETTINGS final = 1";
+            }
 
             try (ResultSet results = statement.executeQuery(query)) {
                 while (results.next()) {

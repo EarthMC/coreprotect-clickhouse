@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Locale;
 
+import net.coreprotect.config.Config;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.command.CommandSender;
@@ -59,6 +60,10 @@ public class InteractionLookup {
             }
 
             String query = "SELECT count(*) over () as count, time,user,type,data,rolled_back FROM " + ConfigHandler.prefix + "block WHERE wid = '" + worldId + "' AND x = '" + x + "' AND z = '" + z + "' AND y = '" + y + "' AND action='2' AND time >= '" + checkTime + "' ORDER BY rowid DESC LIMIT " + limit + " OFFSET " + pageStart;
+
+            if (Config.getGlobal().SELECT_USE_FINAL) {
+                query += " SETTINGS final = 1";
+            }
 
             try (ResultSet results = statement.executeQuery(query)) {
                 StringBuilder resultBuilder = new StringBuilder();

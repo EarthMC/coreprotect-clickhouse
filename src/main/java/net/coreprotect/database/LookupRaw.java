@@ -650,6 +650,11 @@ public class LookupRaw extends Queue {
             }
 
             query += queryOrder + queryLimitOffset + " SETTINGS output_format_json_quote_64bit_integers=0";
+
+            if (Config.getGlobal().SELECT_USE_FINAL) {
+                query += " SETTINGS final = 1";
+            }
+
             return statement.executeQuery(query);
         }
         catch (Exception e) {
