@@ -425,6 +425,11 @@ public class ItemUtils {
             return "";
         }
 
+        if (serializedItem.itemStack().getAmount() > 99) {
+            // need to limit the size in this case
+            serializedItem.itemStack().setAmount(99);
+        }
+
         // Returns a string like <hover:show_item:...>
         return MiniMessage.miniMessage().serialize(Component.text().hoverEvent(serializedItem.itemStack()).build());
     }
@@ -514,6 +519,7 @@ public class ItemUtils {
     @SuppressWarnings("deprecation")
     public static String serializeItem(@NonNull ItemStack itemStack, int slot, BlockFace faceData) {
         if (itemStack.getAmount() > 99) {
+            itemStack = itemStack.clone();
             itemStack.setAmount(99);
         }
 
@@ -538,7 +544,7 @@ public class ItemUtils {
     public static SerializedItem deserializeItem(@Nullable String itemString, @Nullable Material type, int amount) {
         if (itemString == null || itemString.isEmpty() || "{}".equals(itemString) || "0".equals(itemString)) {
             if (type != null && amount > 0 && type.isItem()) {
-                return SerializedItem.of(ItemStack.of(type, Math.min(amount, 99)));
+                return SerializedItem.of(ItemStack.of(type, amount));
             } else {
                 return null;
             }
@@ -549,7 +555,7 @@ public class ItemUtils {
             object = JsonSerialization.DEFAULT_GSON.fromJson(itemString, JsonObject.class);
         } catch (JsonSyntaxException e) {
             CoreProtect.getInstance().getSLF4JLogger().warn("Failed to deserialize an item stack from {}", itemString, e);
-            return type != null && amount > 0 && type.isItem() ? SerializedItem.of(ItemStack.of(type, Math.min(amount, 99))) : null;
+            return type != null && amount > 0 && type.isItem() ? SerializedItem.of(ItemStack.of(type, amount)) : null;
         }
 
         Integer slot = null;
@@ -565,16 +571,20 @@ public class ItemUtils {
 
         if (!object.has("DataVersion")) {
             // not an item, or just not saved fully due to not having any special data
-            return type != null && amount > 0 && type.isItem() ? new SerializedItem(ItemStack.of(type, Math.min(amount, 99)), slot, faceData) : null;
+            return type != null && amount > 0 && type.isItem() ? new SerializedItem(ItemStack.of(type, amount), slot, faceData) : null;
         }
 
         try {
             final ItemStack itemStack = Bukkit.getUnsafe().deserializeItemFromJson(object);
+            if (itemStack.getAmount() < amount) {
+                // can only serialize items with up to 99 items, try to restore the original size
+                itemStack.setAmount(amount);
+            }
 
             return new SerializedItem(itemStack, slot, faceData);
         } catch (Exception e) {
             CoreProtect.getInstance().getSLF4JLogger().warn("Failed to deserialize item from json {}", object, e);
-            return type != null && amount > 0 && type.isItem() ? new SerializedItem(ItemStack.of(type, Math.min(amount, 99)), slot, faceData) : null;
+            return type != null && amount > 0 && type.isItem() ? new SerializedItem(ItemStack.of(type, amount), slot, faceData) : null;
         }
     }
 
