@@ -517,7 +517,7 @@ public class ItemUtils {
             itemStack.setAmount(99);
         }
 
-        final JsonObject object = Bukkit.getUnsafe().serializeItemAsJson(itemStack);
+        final JsonObject object = hasNonTrivialData(itemStack) ? Bukkit.getUnsafe().serializeItemAsJson(itemStack) : new JsonObject();
 
         if (slot >= 0) {
             object.addProperty("co_slot", slot);
@@ -564,7 +564,7 @@ public class ItemUtils {
         }
 
         if (!object.has("DataVersion")) {
-            // not an item
+            // not an item, or just not saved fully due to not having any special data
             return type != null && amount > 0 && type.isItem() ? new SerializedItem(ItemStack.of(type, Math.min(amount, 99)), slot, faceData) : null;
         }
 

@@ -224,11 +224,7 @@ public class ContainerLogger extends Queue {
                             return;
                         }
 
-                        // slot is only relevant when face data is set
-                        String itemData = null;
-                        if ((faceData != null && !faceData.isEmpty()) || ItemUtils.hasNonTrivialData(item)) {
-                            itemData = ItemUtils.serializeItem(item, slot, ItemUtils.parseBlockFaceOrNull(faceData));
-                        }
+                        String itemData = ItemUtils.serializeItem(item, slot, ItemUtils.parseBlockFaceOrNull(faceData));
 
                         int userId = UserStatement.getId(preparedStmt, event.getUser(), true);
                         Location eventLocation = event.getLocation();

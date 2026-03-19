@@ -50,10 +50,6 @@ public class Rollback extends RollbackUtil {
                 rawLookupResult = Lookup.performLookup(statement, user, checkUuids, checkUsers, restrictList, excludeList, excludeUserList, actionList, location, radius, null, startTime, endTime, -1, -1, restrictWorld, lookup, false);
             }
 
-            if (!(rawLookupResult instanceof final CommonLookupResult lookupResult)) {
-                return null;
-            }
-
             boolean ROLLBACK_ITEMS = false;
             List<Object> itemRestrictList = new ArrayList<>(restrictList);
             Map<Object, Boolean> itemExcludeList = new HashMap<>(excludeList);
@@ -89,6 +85,10 @@ public class Rollback extends RollbackUtil {
                 }
             }
 
+            if (!(rawLookupResult instanceof CommonLookupResult) && itemLookupResult == null) {
+                return null;
+            }
+
             LinkedHashSet<Integer> worldList = new LinkedHashSet<>();
             TreeMap<Long, Integer> chunkList = new TreeMap<>();
             Map<Integer, Map<Long, List<CommonLookupData>>> dataList = new HashMap<>();
@@ -101,7 +101,7 @@ public class Rollback extends RollbackUtil {
 
             int listC = 0;
             while (listC < 2) {
-                List<CommonLookupData> scanList = lookupResult.data();
+                List<CommonLookupData> scanList = rawLookupResult != null ? ((CommonLookupResult) rawLookupResult).data() : List.of(); // rawLookupResult can be null while upstream just handles it as an empty list
 
                 if (listC == 1 && itemLookupResult != null) {
                     scanList = itemLookupResult.data();
@@ -211,7 +211,7 @@ public class Rollback extends RollbackUtil {
                     Queue.queueRollbackUpdate(userString, blockList, Process.BLOCK_INVENTORY_ROLLBACK_UPDATE, rollbackType);
                 }
                 else {
-                    Queue.queueRollbackUpdate(userString, lookupResult.data(), Process.ROLLBACK_UPDATE, rollbackType);
+                    Queue.queueRollbackUpdate(userString, rawLookupResult instanceof CommonLookupResult lookupResult ? lookupResult.data() : null, Process.ROLLBACK_UPDATE, rollbackType);
                     Queue.queueRollbackUpdate(userString, itemLookupResult != null ? itemLookupResult.data() : null, Process.CONTAINER_ROLLBACK_UPDATE, rollbackType);
                 }
             }
