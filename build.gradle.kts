@@ -5,7 +5,7 @@ plugins {
     id("com.gradleup.shadow") version "9.3.0"
     id("xyz.jpenilla.run-paper") version "3.0.2"
     id("com.gorylenko.gradle-git-properties") version "2.5.2"
-    id("net.earthmc.conventions.publishing") version "1.0.8"
+    id("net.earthmc.conventions.publishing") version "1.1.0"
 }
 
 repositories {
@@ -17,13 +17,9 @@ repositories {
     maven("https://jitpack.io")
 }
 
-earthmc {
-    mainBranch = "master"
-
-    publishing {
-        public = true
-        javadoc = false // javadoc creation is broken, it seems to be pulling in something from paperweight
-    }
+earthmcPublish {
+    public = true
+    javadoc = false // javadoc creation is broken, it seems to be pulling in something from paperweight
 }
 
 dependencies {
