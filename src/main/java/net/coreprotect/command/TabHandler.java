@@ -372,27 +372,37 @@ public class TabHandler implements TabCompleter {
     }
 
     private List<String> handleMaterialParamCompletions(String currentArg, String lastArg) {
-        String filter = lastArg;
+        String leading = currentArg;
         String arg = "";
         if (currentArg.contains(":")) {
             String[] split = currentArg.split(":", 2);
-            filter = split[0] + ":";
             if (split.length > 1) {
-                arg = split[1];
+                final String materials = split[1];
+
+                for (int i = materials.length() - 1; i >= 0; i--) {
+                    final char curr = materials.charAt(i);
+
+                    if (i == 0 || curr == ',') {
+                        final int adjustment = i == 0 ? 0 : 1; // +1 to account for the comma
+
+                        leading = split[0] + ":" + materials.substring(0, i + adjustment);
+                        arg = materials.substring(i + adjustment);
+                        break;
+                    }
+                }
             }
-        }
-        else {
-            filter = "";
-            arg = currentArg;
         }
 
         initializeMaterialsIfNeeded();
 
-        List<String> completions = new ArrayList<>(materials);
-        for (int index = 0; index < completions.size(); index++) {
-            completions.set(index, filter + completions.get(index));
+        final List<String> completions = new ArrayList<>();
+        for (final String material : materials) {
+            if (arg.isEmpty() || material.startsWith(arg)) {
+                completions.add(leading + material);
+            }
         }
-        return StringUtil.copyPartialMatches(filter + arg, completions, new ArrayList<>(completions.size()));
+
+        return completions;
     }
 
     private void initializeMaterialsIfNeeded() {
