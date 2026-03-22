@@ -623,7 +623,7 @@ public class LookupRaw extends Queue {
 
             if (itemLookup) {
                 rows = "rowid as id,time,user,wid,x,y,z,type,toString(metadata) as metadata,toString(data) as data,amount,action,rolled_back,version";
-                query = query + unionSelect + "SELECT " + "'1' as tbl," + rows + " FROM " + ConfigHandler.prefix + "container WHERE" + queryBlock + unionLimit + ") UNION ALL ";
+                query += (query.isEmpty() ? baseSelect + "(" : unionSelect) + "SELECT '1' as tbl," + rows + " FROM " + ConfigHandler.prefix + "container WHERE" + queryBlock + unionLimit + ") UNION ALL ";
 
                 rows = "rowid as id,time,user,wid,x,y,z,type,toString(" + ConfigHandler.prefix + "item.data) as metadata,'0' as data,amount,action,rolled_back,version";
                 queryOrder = " ORDER BY time DESC, tbl DESC, id DESC";
@@ -644,8 +644,7 @@ public class LookupRaw extends Queue {
             }
 
             query = query.replace(" action NOT IN(-1) AND", ""); // Remove placeholders
-            final boolean hasUnion = query.contains("UNION");
-            if (hasUnion) {
+            if (query.startsWith(baseSelect)) {
                 query += ")";
             }
 
