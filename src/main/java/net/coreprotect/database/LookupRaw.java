@@ -523,8 +523,13 @@ public class LookupRaw extends Queue {
                 queryBlock = queryBlock + " uuid IN(" + uuids + ") AND";
             }
 
+            // CH - handle a:death
             if (!users.isEmpty()) {
+                if (!actionList.contains(999)) {
                 queryBlock = queryBlock + " user IN(" + users + ") AND";
+                } else {
+                    queryBlock += " type = 0 AND data IN(" + users + ") AND";
+                }
             }
 
             if (!excludeUsers.isEmpty()) {
