@@ -41,7 +41,7 @@ public class EntityConverter implements ConvertProcess {
             long batchCount = 0;
 
             try (PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO " + table.fullName() + " (rowid, time, data) VALUES (?, ?, ?)");
-                 PreparedStatement readStatement = connection.prepareStatement("SELECT rowid, time, hex(data) FROM " + converter.formatMysqlSource(table) + " OFFSET " + options.offset())) {
+                 PreparedStatement readStatement = connection.prepareStatement("SELECT " + converter.formatSourceColumn("rowid", options) + ", time, hex(data) FROM " + converter.formatMysqlSource(table) + " OFFSET " + options.offset())) {
 
                 final ResultSet rs = readStatement.executeQuery();
                 while (converter.next(rs, insertStatement, batchCount)) {

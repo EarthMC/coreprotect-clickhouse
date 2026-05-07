@@ -3,6 +3,7 @@ package net.coreprotect.database.convert;
 import com.google.gson.JsonSyntaxException;
 import net.coreprotect.CoreProtect;
 import net.coreprotect.database.convert.process.CorruptResultRowException;
+import net.coreprotect.database.convert.process.ConvertOptions;
 import net.coreprotect.database.convert.table.ArtTable;
 import net.coreprotect.database.convert.table.BlockDataTable;
 import net.coreprotect.database.convert.table.BlockTable;
@@ -43,6 +44,7 @@ public class ClickhouseConverter {
 
     private final Map<String, TableData> tables = new LinkedHashMap<>();
     private final Path credentialsPath;
+    private final Path sqliteDatabasePath;
 
     public ClickhouseConverter(final CoreProtect plugin) {
         addTable(new ArtTable());
@@ -66,18 +68,16 @@ public class ClickhouseConverter {
         addTable(new UsernameLogTable());
 
         this.credentialsPath = plugin.getDataPath().resolve("mysql-credentials.json");
+        this.sqliteDatabasePath = plugin.getDataPath().resolve("sqlite-database.json");
         if (Files.exists(credentialsPath)) {
             try {
                 this.databaseAccess = JsonSerialization.DEFAULT_GSON.fromJson(Files.readString(credentialsPath), MySQLLoginInformation.class);
             } catch (IOException | JsonSyntaxException e) {
                 LOGGER.warn("Failed to read saved credentials file", e);
             }
-        } else if (Files.exists(plugin.getDataPath().resolve("sqlite-database.json"))) {
-            // Note: importing from sqlite is untested
-            final Path path = plugin.getDataPath().resolve("sqlite-database.json");
-
+        } else if (Files.exists(sqliteDatabasePath)) {
             try {
-                this.databaseAccess = JsonSerialization.DEFAULT_GSON.fromJson(Files.readString(path), SQLiteDatabaseInformation.class);
+                this.databaseAccess = JsonSerialization.DEFAULT_GSON.fromJson(Files.readString(sqliteDatabasePath), SQLiteDatabaseInformation.class);
             } catch (IOException | JsonSyntaxException e) {
                 LOGGER.warn("Failed to read sqlite database path", e);
             }
@@ -98,10 +98,30 @@ public class ClickhouseConverter {
 
     public String formatMysqlSource(TableData table) {
         return switch (this.databaseAccess) {
-            case SQLiteDatabaseInformation sqlite -> "sqlite('" + sqlite.databasePath + "', " + table.fullName() + "')";
-            case MySQLLoginInformation mysql -> "mysql('" + mysql.address + "', '" + mysql.database + "', '" + table.fullName() + "', '" + mysql.user + "', '" + mysql.password + "')";
+            case SQLiteDatabaseInformation sqlite -> "sqlite(" + quoteClickHouseString(sqlite.databasePath) + ", " + quoteClickHouseString(table.fullName()) + ")";
+            case MySQLLoginInformation mysql -> "mysql(" + quoteClickHouseString(mysql.address) + ", " + quoteClickHouseString(mysql.database) + ", " + quoteClickHouseString(table.fullName()) + ", " + quoteClickHouseString(mysql.user) + ", " + quoteClickHouseString(mysql.password) + ")";
             case null -> throw new IllegalStateException("No database source provided for the converter to use, use /co convert login ");
         };
+    }
+
+    public String formatSourceColumn(String column, ConvertOptions options) {
+        if (this.databaseAccess instanceof SQLiteDatabaseInformation && "rowid".equalsIgnoreCase(column)) {
+            return "rowNumberInAllBlocks() + " + (options.offset() + 1);
+        }
+
+        return column;
+    }
+
+    public String formatSourceRowCount(TableData table) {
+        return switch (this.databaseAccess) {
+            case SQLiteDatabaseInformation ignored -> "SELECT count() + 1 FROM " + formatMysqlSource(table);
+            case MySQLLoginInformation(String address, String database, String user, String password) -> "SELECT AUTO_INCREMENT FROM mysql(" + quoteClickHouseString(address) + ", 'information_schema', 'TABLES', " + quoteClickHouseString(user) + ", " + quoteClickHouseString(password) + ") WHERE TABLE_SCHEMA = " + quoteClickHouseString(database) + " AND TABLE_NAME = " + quoteClickHouseString(table.fullName());
+            case null -> throw new IllegalStateException("No database source provided for the converter to use, use /co convert login ");
+        };
+    }
+
+    private String quoteClickHouseString(String value) {
+        return "'" + value.replace("\\", "\\\\").replace("'", "\\'") + "'";
     }
 
     public Logger logger() {
@@ -120,12 +140,22 @@ public class ClickhouseConverter {
         try {
             if (this.databaseAccess == null) {
                 Files.deleteIfExists(this.credentialsPath);
+                Files.deleteIfExists(this.sqliteDatabasePath);
                 return;
             }
 
-            Files.writeString(this.credentialsPath, JsonSerialization.DEFAULT_GSON.toJson(this.databaseAccess));
+            switch (this.databaseAccess) {
+                case MySQLLoginInformation ignored -> {
+                    Files.deleteIfExists(this.sqliteDatabasePath);
+                    Files.writeString(this.credentialsPath, JsonSerialization.DEFAULT_GSON.toJson(this.databaseAccess));
+                }
+                case SQLiteDatabaseInformation ignored -> {
+                    Files.deleteIfExists(this.credentialsPath);
+                    Files.writeString(this.sqliteDatabasePath, JsonSerialization.DEFAULT_GSON.toJson(this.databaseAccess));
+                }
+            }
         } catch (IOException e) {
-            LOGGER.warn("Failed to write mysql credentials to disk", e);
+            LOGGER.warn("Failed to write converter database access information to disk", e);
         }
     }
 

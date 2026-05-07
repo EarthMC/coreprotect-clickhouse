@@ -32,7 +32,7 @@ public class SimpleConvertProcess implements ConvertProcess {
 
         for (final Map.Entry<String, String> entry : table.getColumnMapping().getMapping().entrySet()) {
             columns.add(entry.getKey());
-            values.add(entry.getValue());
+            values.add(converter.formatSourceColumn(entry.getValue(), options));
         }
 
         String query = "INSERT INTO " + ConfigHandler.prefix + table.getName() + " (" + String.join(", ", columns) + ")" +

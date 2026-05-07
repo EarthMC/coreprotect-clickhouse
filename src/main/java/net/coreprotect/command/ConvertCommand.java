@@ -141,10 +141,7 @@ public class ConvertCommand {
                         for (final TableData table : converter.getTables().values()) {
                             converter.logger().info("Querying row count for table {}...", table.fullName());
 
-                            final PreparedStatement ps = connection.prepareStatement(switch (access) {
-                                case MySQLLoginInformation(String address, String database, String user, String password) -> "SELECT AUTO_INCREMENT FROM mysql('" + address + "', 'information_schema', 'TABLES', '" + user + "', '" + password + "') WHERE TABLE_SCHEMA = '" + database + "' AND TABLE_NAME = '" + table.fullName() + "'";
-                                case SQLiteDatabaseInformation ignored -> "SELECT MAX(rowid) + 1 FROM " + converter.formatMysqlSource(table);
-                            });
+                            final PreparedStatement ps = connection.prepareStatement(converter.formatSourceRowCount(table));
 
                             try (ps; final ResultSet rs = ps.executeQuery()) {
                                 if (rs.next()) {
@@ -247,6 +244,12 @@ public class ConvertCommand {
                         }
 
                         converter.logger().info("Finished converting {}, took {}.", table.fullName(), DurationFormatUtils.formatDurationHMS(System.currentTimeMillis() - startTime));
+                        if (reloadTypeCaches(table)) {
+                            try (Statement statement = connection.createStatement()) {
+                                ConfigHandler.loadTypes(statement);
+                            }
+                            converter.logger().info("Reloaded type caches after converting {}.", table.fullName());
+                        }
                     } catch (SQLException e) {
                         converter.logger().error("SQL exception occurred while running converter", e);
                     }
@@ -264,5 +267,12 @@ public class ConvertCommand {
                 });
             }
         }
+    }
+
+    private static boolean reloadTypeCaches(TableData table) {
+        return switch (table.getName()) {
+            case "art_map", "blockdata_map", "entity_map", "material_map" -> true;
+            default -> false;
+        };
     }
 }

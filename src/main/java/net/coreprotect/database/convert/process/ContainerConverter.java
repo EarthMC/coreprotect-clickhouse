@@ -20,7 +20,7 @@ public class ContainerConverter implements ConvertProcess {
         long batchCount = 0;
 
         try (PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO " + table.fullName() + " (rowid, time, user, wid, x, y, z, type, data, amount, metadata, action, rolled_back) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            PreparedStatement readStatement = connection.prepareStatement("SELECT rowid, time, user, wid, x, y, z, type, data, amount, hex(metadata), action, rolled_back FROM " + converter.formatMysqlSource(table) + " OFFSET " + options.offset())) {
+            PreparedStatement readStatement = connection.prepareStatement("SELECT " + converter.formatSourceColumn("rowid", options) + ", time, user, wid, x, y, z, type, data, amount, hex(metadata), action, rolled_back FROM " + converter.formatMysqlSource(table) + " OFFSET " + options.offset())) {
 
             final ResultSet rs = readStatement.executeQuery();
             while (converter.next(rs, insertStatement, batchCount)) {
