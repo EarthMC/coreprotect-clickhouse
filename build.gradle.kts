@@ -22,6 +22,26 @@ earthmcPublish {
     javadoc = false // javadoc creation is broken, it seems to be pulling in something from paperweight
 }
 
+publishing {
+    repositories {
+        maven {
+            name = "lemongaming"
+            credentials {
+                username = providers.gradleProperty("lgNexusUser").get()
+                password = providers.gradleProperty("lgNexusPass").get()
+            }
+            url = uri(
+                if (version.toString().endsWith("SNAPSHOT")) {
+                    "https://repo.lemongaming.ltd/repository/maven-snapshots/"
+                }
+                else {
+                    "https://repo.lemongaming.ltd/repository/maven-releases/"
+                }
+            )
+        }
+    }
+}
+
 dependencies {
     paperweight.paperDevBundle("${libs.versions.minecraft.get()}-R0.1-SNAPSHOT")
 

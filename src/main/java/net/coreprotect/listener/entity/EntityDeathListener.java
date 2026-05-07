@@ -76,27 +76,35 @@ public final class EntityDeathListener extends Queue implements Listener {
         }
     }
 
-    protected static void logEntityDeath(LivingEntity entity, String e) {
-        if (!Config.getConfig(entity.getWorld()).ENTITY_KILLS) {
+    public static void logEntityDeath(LivingEntity entity, String e) {
+        logEntityDeath(entity, e, true, true, true);
+    }
+
+    public static void logEntityRemoval(LivingEntity entity, String e) {
+        logEntityDeath(entity, e, false, false, false);
+    }
+
+    private static void logEntityDeath(LivingEntity entity, String e, boolean respectEntityKillConfig, boolean inferDamageSource, boolean suppressDuplicates) {
+        if (respectEntityKillConfig && !Config.getConfig(entity.getWorld()).ENTITY_KILLS) {
             return;
         }
 
         EntityDamageEvent damage = entity.getLastDamageCause();
-        if (damage == null) {
+        if (inferDamageSource && damage == null && (e == null || e.isEmpty())) {
             return;
         }
 
-        final EntityDamageEvent.DamageCause cause = damage.getCause();
-        boolean isCommand = cause == DamageCause.KILL || (cause == DamageCause.VOID && entity.getLocation().getBlockY() >= BukkitAdapter.ADAPTER.getMinHeight(entity.getWorld()));
+        final EntityDamageEvent.DamageCause cause = damage == null ? null : damage.getCause();
+        boolean isCommand = inferDamageSource && (cause == DamageCause.KILL || (cause == DamageCause.VOID && entity.getLocation().getBlockY() >= BukkitAdapter.ADAPTER.getMinHeight(entity.getWorld())));
         if (e == null) {
             e = isCommand ? "#command" : "";
         }
 
-        if (entity.getType() == EntityType.GLOW_SQUID && cause == DamageCause.DROWNING) {
+        if (inferDamageSource && entity.getType() == EntityType.GLOW_SQUID && cause == DamageCause.DROWNING) {
             return;
         }
 
-        if (Config.getConfig(entity.getWorld()).SKIP_GENERIC_DATA) {
+        if (inferDamageSource && Config.getConfig(entity.getWorld()).SKIP_GENERIC_DATA) {
             // Skip logging deaths for short-lived (< 5 minutes) spawner entities.
             if (entity.getEntitySpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER && entity.getTicksLived() <= 6000) {
                 return;
@@ -113,7 +121,7 @@ public final class EntityDeathListener extends Queue implements Listener {
             }
         }
 
-        if (damage instanceof EntityDamageByEntityEvent attack) {
+        if (inferDamageSource && damage instanceof EntityDamageByEntityEvent attack) {
             Entity attacker = attack.getDamager();
 
             if (attacker instanceof Player player) {
@@ -134,7 +142,7 @@ public final class EntityDeathListener extends Queue implements Listener {
                 e = "#" + attacker.getType().name().toLowerCase(Locale.ROOT);
             }
         }
-        else {
+        else if (inferDamageSource && cause != null) {
             if (cause.equals(EntityDamageEvent.DamageCause.FIRE) || cause == DamageCause.FIRE_TICK) {
                 e = "#fire";
             }
@@ -210,7 +218,7 @@ public final class EntityDeathListener extends Queue implements Listener {
             return;
         }
 
-        if (Config.getConfig(entity.getWorld()).DUPLICATE_SUPPRESSION && shouldSuppressEntityKill(e, entity, cause)) {
+        if (suppressDuplicates && Config.getConfig(entity.getWorld()).DUPLICATE_SUPPRESSION && shouldSuppressEntityKill(e, entity, cause)) {
             return;
         }
 

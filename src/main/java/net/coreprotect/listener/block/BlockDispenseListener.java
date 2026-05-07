@@ -42,6 +42,11 @@ public final class BlockDispenseListener extends Queue implements Listener {
             if (item != null && blockData instanceof Dispenser) {
                 Dispenser dispenser = (Dispenser) blockData;
                 Material material = item.getType();
+                // Cannon dispensers can fire TNT in huge bursts; explosion logging still records the impact.
+                if (material == Material.TNT) {
+                    return;
+                }
+
                 Material type = Material.AIR;
                 String user = "#dispenser";
                 boolean forceItem = true;

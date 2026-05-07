@@ -40,6 +40,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import net.coreprotect.api.BlockDataProviderRegistry;
 import net.coreprotect.bukkit.BukkitAdapter;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.consumer.Queue;
@@ -50,9 +51,12 @@ import net.coreprotect.utility.BlockUtils;
 import net.coreprotect.utility.ChestTool;
 import net.coreprotect.utility.EntityUtils;
 import net.coreprotect.utility.ItemUtils;
+import net.coreprotect.utility.WorldUtils;
 import net.coreprotect.utility.entity.HangingUtil;
 
 public class RollbackBlockHandler extends Queue {
+
+    private static final Map<String, byte[]> pendingProviderData = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * Handle block-related rollback operations
@@ -113,6 +117,11 @@ public class RollbackBlockHandler extends Queue {
         int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
 
         try {
+            byte[] providerData = extractProviderData(meta);
+            if (providerData != null && rowType != Material.AIR) {
+                pendingProviderData.put(providerDataKey(rowX, rowY, rowZ, rowWorldId), providerData);
+            }
+
             if (changeBlock) {
                 /* If modifying the head of a piston, update the base piston block to prevent it from being destroyed */
                 if (changeBlockData instanceof PistonHead) {
@@ -309,6 +318,7 @@ public class RollbackBlockHandler extends Queue {
                         CreatureSpawner mobSpawner = (CreatureSpawner) block.getState();
                         mobSpawner.setSpawnedType(EntityUtils.getSpawnerType(rowData));
                         mobSpawner.update();
+                        restoreProviderData(block);
 
                         return countBlock;
                     }
@@ -579,6 +589,7 @@ public class RollbackBlockHandler extends Queue {
         if (preview > 0 && user != null) {
             user.sendMultiBlockChange(chunkChanges);
             chunkChanges.clear();
+            clearPendingProviderData();
             return;
         }
 
@@ -587,7 +598,28 @@ public class RollbackBlockHandler extends Queue {
             BlockData changeBlockData = chunkChange.getValue();
 
             BlockUtils.setTypeAndData(changeBlock, null, changeBlockData, true);
+            restoreProviderData(changeBlock);
         }
         chunkChanges.clear();
+        clearPendingProviderData();
+    }
+
+    private static byte[] extractProviderData(SerializedBlockMeta meta) {
+        return meta == null ? null : meta.providerData();
+    }
+
+    private static void restoreProviderData(Block block) {
+        byte[] providerData = pendingProviderData.remove(providerDataKey(block.getX(), block.getY(), block.getZ(), WorldUtils.getWorldId(block.getWorld().getName())));
+        if (providerData != null) {
+            BlockDataProviderRegistry.restoreCustomData(block, providerData);
+        }
+    }
+
+    public static void clearPendingProviderData() {
+        pendingProviderData.clear();
+    }
+
+    private static String providerDataKey(int x, int y, int z, int worldId) {
+        return x + ":" + y + ":" + z + ":" + worldId;
     }
 }

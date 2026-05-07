@@ -1,19 +1,18 @@
 package net.coreprotect.database.lookup;
 
+import net.coreprotect.api.BlockDataProviderRegistry;
 import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.database.statement.UserStatement;
 import net.coreprotect.language.Phrase;
 import net.coreprotect.language.Selector;
 import net.coreprotect.listener.channel.PluginChannelListener;
+import net.coreprotect.utility.BlockUtils;
 import net.coreprotect.utility.ChatUtils;
 import net.coreprotect.utility.Color;
 import net.coreprotect.utility.EntityUtils;
 import net.coreprotect.utility.MaterialUtils;
-import net.coreprotect.utility.StringUtils;
 import net.coreprotect.utility.WorldUtils;
-import net.coreprotect.utility.*;
-import org.bukkit.Material;
 import org.bukkit.block.BlockState;
 import org.bukkit.command.CommandSender;
 
@@ -62,7 +61,7 @@ public class BlockLookup {
 
             String blockName = block.getType().name().toLowerCase(Locale.ROOT);
 
-            String query = "SELECT count(*) over () as count, time,user,action,type,data,rolled_back FROM " + ConfigHandler.prefix + "block WHERE wid = '" + worldId + "' AND x = '" + x + "' AND z = '" + z + "' AND y = '" + y + "' AND action IN(0,1) AND time >= '" + checkTime + "' ORDER BY rowid DESC LIMIT " + limit + " OFFSET " + page_start;
+            String query = "SELECT count(*) over () as count, time,user,action,type,data,toString(meta) as meta,rolled_back FROM " + ConfigHandler.prefix + "block WHERE wid = '" + worldId + "' AND x = '" + x + "' AND z = '" + z + "' AND y = '" + y + "' AND action IN(0,1) AND time >= '" + checkTime + "' ORDER BY rowid DESC LIMIT " + limit + " OFFSET " + page_start;
 
             if (Config.getGlobal().SELECT_USE_FINAL) {
                 query += " SETTINGS final = 1";
@@ -78,6 +77,7 @@ public class BlockLookup {
                     int resultAction = results.getInt("action");
                     int resultType = results.getInt("type");
                     int resultData = results.getInt("data");
+                    String resultMeta = results.getString("meta");
                     long resultTime = results.getLong("time");
                     int resultRolledBack = results.getInt("rolled_back");
 
@@ -129,7 +129,12 @@ public class BlockLookup {
                         target = target.split(":")[1];
                     }
 
-                    resultTextBuilder.append(timeAgo + " " + tag + " ").append(Phrase.build(phrase, Color.DARK_AQUA + rbFormat + resultUser + Color.WHITE + rbFormat, Color.DARK_AQUA + rbFormat + target + Color.WHITE, selector)).append("\n");
+                    String tooltip = getProviderTooltip(resultMeta);
+                    String targetDisplay = tooltip.isEmpty()
+                            ? Color.DARK_AQUA + rbFormat + target + Color.WHITE
+                            : ChatUtils.createTooltip(Color.DARK_AQUA + rbFormat + target, tooltip) + Color.WHITE;
+
+                    resultTextBuilder.append(timeAgo + " " + tag + " ").append(Phrase.build(phrase, Color.DARK_AQUA + rbFormat + resultUser + Color.WHITE + rbFormat, targetDisplay, selector)).append("\n");
                     PluginChannelListener.getInstance().sendData(commandSender, resultTime, phrase, selector, resultUser, target, -1, x, y, z, worldId, rbFormat, false, tag.contains("+"));
                 }
 
@@ -166,6 +171,20 @@ public class BlockLookup {
             e.printStackTrace();
         }
         return resultText;
+    }
+
+    private static String getProviderTooltip(String metaJson) {
+        if (metaJson == null || metaJson.isEmpty()) {
+            return "";
+        }
+
+        try {
+            byte[] providerData = BlockUtils.deserializeMeta(metaJson).providerData();
+            return BlockDataProviderRegistry.getTooltip(providerData);
+        }
+        catch (Exception ignored) {
+            return "";
+        }
     }
 
 }

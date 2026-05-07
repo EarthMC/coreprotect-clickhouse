@@ -45,6 +45,14 @@ public class ChatUtils {
         return "<hover:show_text:'<gray>" + "(x" + x + "/y" + y + "/z" + z + "/" + WorldUtils.getWorldName(worldId) + ")'><click:run_command:" + command + "><extra></click></hover>";
     }
 
+    public static String createTooltip(String text, String tooltip) {
+        if (tooltip == null || tooltip.isEmpty()) {
+            return text;
+        }
+
+        return "<hover:show_text:'" + tooltip.replace("'", "\\'") + "'>" + text + "</hover>";
+    }
+
     public static String getPageNavigation(String usedCommand, int page, int totalPages) {
         StringBuilder message = new StringBuilder();
 

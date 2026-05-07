@@ -24,6 +24,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import net.coreprotect.CoreProtect;
+import net.coreprotect.api.BlockDataProviderRegistry;
 import net.coreprotect.bukkit.BukkitAdapter;
 import net.coreprotect.thread.Scheduler;
 
@@ -253,18 +254,22 @@ public class BlockUtils {
     }
 
     public static SerializedBlockMeta processMeta(BlockState block) {
+        String command = null;
+        List<SerializedItem> items = null;
+        BannerData bannerData = null;
+
         if (block instanceof CommandBlock commandBlock) {
-            String command = commandBlock.getCommand();
-            if (!command.isEmpty()) {
-                return new SerializedBlockMeta(command, null, null);
+            command = commandBlock.getCommand();
+            if (command.isEmpty()) {
+                command = null;
             }
         }
         else if (block instanceof Banner banner) {
-            return new SerializedBlockMeta(null, null, new BannerData(banner.getBaseColor(), banner.getPatterns()));
+            bannerData = new BannerData(banner.getBaseColor(), banner.getPatterns());
         }
         else if (block instanceof ShulkerBox shulkerBox) {
             ItemStack[] inventory = shulkerBox.getSnapshotInventory().getStorageContents();
-            List<SerializedItem> items = new ArrayList<>();
+            items = new ArrayList<>();
 
             int slot = 0;
             for (ItemStack itemStack : inventory) {
@@ -273,11 +278,18 @@ public class BlockUtils {
                 }
                 slot++;
             }
-
-            return new SerializedBlockMeta(null, items, null);
         }
 
-        return null;
+        byte[] providerData = null;
+        if (BlockDataProviderRegistry.hasProvidersForMaterial(block.getType())) {
+            providerData = BlockDataProviderRegistry.serializeCustomData(block);
+        }
+
+        if (command == null && (items == null || items.isEmpty()) && bannerData == null && (providerData == null || providerData.length == 0)) {
+            return null;
+        }
+
+        return new SerializedBlockMeta(command, items, bannerData, providerData);
     }
 
     public static SerializedBlockMeta deserializeMeta(String metaJson) {

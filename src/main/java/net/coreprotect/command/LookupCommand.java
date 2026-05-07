@@ -1,5 +1,6 @@
 package net.coreprotect.command;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -602,7 +603,7 @@ public class LookupCommand {
                         }
                     }
 
-                    Runnable runnable = new StandardLookupThread(player, command, rollbackusers, argBlocks, argExclude, argExcludeUsers, argAction, argRadius, lo, x, y, z, wid, argWid, timeStart, timeEnd, argNoisy, argExcluded, argRestricted, pa, re, type, ts, count);
+                    Runnable runnable = new StandardLookupThread(player, command, rollbackusers, argBlocks, argExclude, argExcludeUsers, getExemptLookupUsers(player, argAction), argAction, argRadius, lo, x, y, z, wid, argWid, timeStart, timeEnd, argNoisy, argExcluded, argRestricted, pa, re, type, ts, count);
                     Thread thread = new Thread(runnable);
                     thread.start();
                 }
@@ -628,5 +629,20 @@ public class LookupCommand {
         else {
             Chat.sendMessage(player, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.MISSING_PARAMETERS, "/co l <params>"));
         }
+    }
+
+    private static List<String> getExemptLookupUsers(CommandSender player, List<Integer> argAction) {
+        List<String> exemptUsers = new ArrayList<>();
+        if ((!argAction.contains(6) && !argAction.contains(7)) || player.hasPermission("coreprotect.exempt")) {
+            return exemptUsers;
+        }
+
+        for (Player onlinePlayer : Bukkit.getServer().getOnlinePlayers()) {
+            if (!onlinePlayer.getName().equalsIgnoreCase(player.getName()) && onlinePlayer.hasPermission("coreprotect.exempt")) {
+                exemptUsers.add(onlinePlayer.getName());
+            }
+        }
+
+        return exemptUsers;
     }
 }

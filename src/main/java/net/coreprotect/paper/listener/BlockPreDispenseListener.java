@@ -48,6 +48,11 @@ public final class BlockPreDispenseListener extends Queue implements Listener {
                 return;
             }
 
+            // Cannon dispensers can fire TNT in huge bursts; explosion logging still records the impact.
+            if (item.getType() == Material.TNT) {
+                return;
+            }
+
             String locationKey = block.getWorld().getUID().toString() + "." + block.getX() + "." + block.getY() + "." + block.getZ();
             if (config.DUPLICATE_SUPPRESSION) {
                 String eventKey = event.getSlot() + "." + item.getType().name() + ":" + item.getAmount();

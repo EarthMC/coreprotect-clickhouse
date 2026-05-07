@@ -15,16 +15,22 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import net.coreprotect.api.BlockAPI;
+import net.coreprotect.api.BlockDataProvider;
+import net.coreprotect.api.BlockDataProviderRegistry;
 import net.coreprotect.api.QueueLookup;
 import net.coreprotect.api.SessionLookup;
 import net.coreprotect.config.Config;
+import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.consumer.Queue;
 import net.coreprotect.database.Database;
 import net.coreprotect.database.Lookup;
 import net.coreprotect.language.Phrase;
+import net.coreprotect.listener.entity.EntityDeathListener;
 import net.coreprotect.listener.player.InventoryChangeListener;
 import net.coreprotect.utility.Chat;
 import net.coreprotect.utility.MaterialUtils;
@@ -57,7 +63,7 @@ public class CoreProtectAPI extends Queue {
 
     /**
      * Converts a list of objects to a map for internal processing
-     * 
+     *
      * @param list
      *            List of objects to convert
      * @return Map with objects as keys and Boolean false as values
@@ -309,6 +315,80 @@ public class CoreProtectAPI extends Queue {
         }
 
         return InventoryChangeListener.inventoryTransaction(user, location, null);
+    }
+
+    /**
+     * Logs item destruction/disposal by a user.
+     *
+     * @param user
+     *            The username
+     * @param location
+     *            The location where items were destroyed
+     * @param items
+     *            The items that were destroyed
+     * @return True if the items were logged
+     */
+    public boolean logItemDestroy(String user, Location location, ItemStack... items) {
+        if (!isEnabled() || !isValidUserAndLocation(user, location) || items == null || items.length == 0) {
+            return false;
+        }
+
+        String loggingItemId = user.toLowerCase(java.util.Locale.ROOT) + "." + location.getBlockX() + "." + location.getBlockY() + "." + location.getBlockZ();
+
+        List<ItemStack> destroyList = ConfigHandler.itemsDestroy.getOrDefault(loggingItemId, new ArrayList<>());
+        for (ItemStack item : items) {
+            if (item != null && !item.getType().isAir() && item.getAmount() > 0) {
+                destroyList.add(item.clone());
+            }
+        }
+
+        if (destroyList.isEmpty()) {
+            return false;
+        }
+
+        ConfigHandler.itemsDestroy.put(loggingItemId, destroyList);
+
+        int itemId = getItemId(loggingItemId);
+        int time = (int) (System.currentTimeMillis() / 1000L) + 1;
+        queueItemTransaction(user, location.clone(), time, 0, itemId);
+
+        return true;
+    }
+
+    /**
+     * Logs an entity kill/removal by a user.
+     *
+     * @param user
+     *            The username or system actor
+     * @param entity
+     *            The entity being removed
+     * @return True if the entity was submitted for logging
+     */
+    public boolean logEntityKill(String user, LivingEntity entity) {
+        if (!isEnabled() || entity == null || user == null || user.isEmpty() || !Config.getConfig(entity.getWorld()).ENTITY_KILLS) {
+            return false;
+        }
+
+        EntityDeathListener.logEntityDeath(entity, user);
+        return true;
+    }
+
+    /**
+     * Logs an entity removal by a user, regardless of the entity-kills configuration.
+     *
+     * @param user
+     *            The username or system actor
+     * @param entity
+     *            The entity being removed
+     * @return True if the entity was submitted for logging
+     */
+    public boolean logEntityRemoval(String user, LivingEntity entity) {
+        if (!isEnabled() || entity == null || user == null || user.isEmpty()) {
+            return false;
+        }
+
+        EntityDeathListener.logEntityRemoval(entity, user);
+        return true;
     }
 
     /**
@@ -965,5 +1045,43 @@ public class CoreProtectAPI extends Queue {
      */
     private boolean isValidUserAndLocation(String user, Location location) {
         return user != null && location != null && !user.isEmpty();
+    }
+
+    /**
+     * Registers a BlockDataProvider to handle custom block data during logging and rollbacks.
+     *
+     * @param provider
+     *            The BlockDataProvider to register
+     * @return True if registration was successful, false if a provider with the same ID already exists
+     * @see BlockDataProvider
+     */
+    public boolean registerBlockDataProvider(BlockDataProvider provider) {
+        if (!isEnabled()) {
+            return false;
+        }
+        return BlockDataProviderRegistry.register(provider);
+    }
+
+    /**
+     * Unregisters a BlockDataProvider by its ID.
+     * This should be called when your plugin is disabled to clean up.
+     *
+     * @param providerId
+     *            The unique identifier of the provider to unregister
+     * @return True if the provider was unregistered, false if it wasn't registered
+     */
+    public boolean unregisterBlockDataProvider(String providerId) {
+        return BlockDataProviderRegistry.unregister(providerId);
+    }
+
+    /**
+     * Checks if a BlockDataProvider is registered with the given ID.
+     *
+     * @param providerId
+     *            The unique identifier to check
+     * @return True if a provider with that ID is registered
+     */
+    public boolean hasBlockDataProvider(String providerId) {
+        return BlockDataProviderRegistry.isRegistered(providerId);
     }
 }

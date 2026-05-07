@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class LookupRaw extends Queue {
 
-    protected static LookupResult<?> performLookup(Statement statement, CommandSender user, List<String> checkUuids, List<String> checkUsers, List<Object> restrictList, Map<Object, Boolean> excludeList, List<String> excludeUserList, List<Integer> actionList, Location location, Integer[] radius, Long[] rowData, long startTime, long endTime, int limitOffset, int limitCount, boolean restrictWorld, boolean lookup, boolean countRows) {
+    protected static LookupResult<?> performLookup(Statement statement, CommandSender user, List<String> checkUuids, List<String> checkUsers, List<Object> restrictList, Map<Object, Boolean> excludeList, List<String> excludeUserList, List<String> exemptUserList, List<Integer> actionList, Location location, Integer[] radius, Long[] rowData, long startTime, long endTime, int limitOffset, int limitCount, boolean restrictWorld, boolean lookup, boolean countRows) {
         List<Integer> invalidRollbackActions = new ArrayList<>();
         invalidRollbackActions.add(2);
 
@@ -50,7 +50,7 @@ public class LookupRaw extends Queue {
             invalidRollbackActions.clear();
         }
 
-        try (final ResultSet results = rawLookupResultSet(statement, user, checkUuids, checkUsers, restrictList, excludeList, excludeUserList, actionList, location, radius, rowData, startTime, endTime, limitOffset, limitCount, restrictWorld, lookup, countRows)) {
+        try (final ResultSet results = rawLookupResultSet(statement, user, checkUuids, checkUsers, restrictList, excludeList, excludeUserList, exemptUserList, actionList, location, radius, rowData, startTime, endTime, limitOffset, limitCount, restrictWorld, lookup, countRows)) {
             if (results == null) {
                 return null;
             }
@@ -250,7 +250,7 @@ public class LookupRaw extends Queue {
         return null;
     }
 
-    static @Nullable ResultSet rawLookupResultSet(Statement statement, CommandSender user, List<String> checkUuids, List<String> checkUsers, List<Object> restrictList, Map<Object, Boolean> excludeList, List<String> excludeUserList, List<Integer> actionList, Location location, Integer[] radius, Long[] rowData, long startTime, long endTime, int limitOffset, int limitCount, boolean restrictWorld, boolean lookup, boolean countRows) {
+    static @Nullable ResultSet rawLookupResultSet(Statement statement, CommandSender user, List<String> checkUuids, List<String> checkUsers, List<Object> restrictList, Map<Object, Boolean> excludeList, List<String> excludeUserList, List<String> exemptUserList, List<Integer> actionList, Location location, Integer[] radius, Long[] rowData, long startTime, long endTime, int limitOffset, int limitCount, boolean restrictWorld, boolean lookup, boolean countRows) {
         String query = "";
 
         try {
@@ -420,6 +420,25 @@ public class LookupRaw extends Queue {
                 }
 
                 excludeUsers = excludeUserText.toString();
+            }
+
+            if (!exemptUserList.isEmpty()) {
+                final StringBuilder exemptUserText = new StringBuilder();
+
+                for (String exemptTarget : exemptUserList) {
+                    int userId = UserStatement.getId(statement.getConnection(), exemptTarget, true);
+
+                    if (exemptUserText.isEmpty()) {
+                        exemptUserText.append(userId);
+                    }
+                    else {
+                        exemptUserText.append(",").append(userId);
+                    }
+                }
+
+                if (!exemptUserText.isEmpty()) {
+                    excludeUsers = excludeUsers.isEmpty() ? exemptUserText.toString() : excludeUsers + "," + exemptUserText;
+                }
             }
 
             // Specify actions to exclude from a:item

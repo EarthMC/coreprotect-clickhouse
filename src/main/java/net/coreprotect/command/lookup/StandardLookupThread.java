@@ -27,6 +27,7 @@ import org.bukkit.command.CommandSender;
 
 import com.google.common.base.Strings;
 
+import net.coreprotect.api.BlockDataProviderRegistry;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.database.Database;
 import net.coreprotect.database.Lookup;
@@ -37,6 +38,7 @@ import net.coreprotect.language.Phrase;
 import net.coreprotect.language.Selector;
 import net.coreprotect.listener.channel.PluginChannelHandshakeListener;
 import net.coreprotect.listener.channel.PluginChannelListener;
+import net.coreprotect.utility.BlockUtils;
 import net.coreprotect.utility.Chat;
 import net.coreprotect.utility.ChatUtils;
 import net.coreprotect.utility.Color;
@@ -53,6 +55,7 @@ public class StandardLookupThread implements Runnable {
     private final List<Object> blockList;
     private final Map<Object, Boolean> excludedBlocks;
     private final List<String> excludedUsers;
+    private final List<String> exemptUsers;
     private final List<Integer> actions;
     private final Integer[] radius;
     private final Location location;
@@ -72,13 +75,14 @@ public class StandardLookupThread implements Runnable {
     private final String rtime;
     private final boolean count;
 
-    public StandardLookupThread(CommandSender player, Command command, List<String> rollbackUsers, List<Object> blockList, Map<Object, Boolean> excludedBlocks, List<String> excludedUsers, List<Integer> actions, Integer[] radius, Location location, int x, int y, int z, int worldId, int argWorldId, long timeStart, long timeEnd, int noisy, int excluded, int restricted, int page, int displayResults, int typeLookup, String rtime, boolean count) {
+    public StandardLookupThread(CommandSender player, Command command, List<String> rollbackUsers, List<Object> blockList, Map<Object, Boolean> excludedBlocks, List<String> excludedUsers, List<String> exemptUsers, List<Integer> actions, Integer[] radius, Location location, int x, int y, int z, int worldId, int argWorldId, long timeStart, long timeEnd, int noisy, int excluded, int restricted, int page, int displayResults, int typeLookup, String rtime, boolean count) {
         this.player = player;
         this.command = command;
         this.rollbackUsers = rollbackUsers;
         this.blockList = blockList;
         this.excludedBlocks = excludedBlocks;
         this.excludedUsers = excludedUsers;
+        this.exemptUsers = exemptUsers;
         this.actions = actions;
         this.radius = radius;
         this.location = location;
@@ -196,7 +200,7 @@ public class StandardLookupThread implements Runnable {
                     }
                 }
 
-                final LookupResult<?> lookupResult = Lookup.performLookup(statement, player, uuidList, userList, blockList, excludedBlocks, excludedUsers, actions, finalLocation, radius, rowData, timeStart, timeEnd, (int) pageStart, displayResults, restrict_world, true, checkRows);
+                final LookupResult<?> lookupResult = Lookup.performLookup(statement, player, uuidList, userList, blockList, excludedBlocks, excludedUsers, exemptUsers, actions, finalLocation, radius, rowData, timeStart, timeEnd, (int) pageStart, displayResults, restrict_world, true, checkRows);
                 if (lookupResult == null) {
                     Chat.sendMessage(player, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- An error occurred while processing this lookup.");
                     return;
@@ -429,7 +433,12 @@ public class StandardLookupThread implements Runnable {
                                         tag = (daction != 0 ? Color.GREEN + "+" : Color.RED + "-");
                                     }
 
-                                    Chat.sendComponent(player, timeago + " " + tag + " " + Phrase.build(phrase, Color.DARK_AQUA + rollbackDecoration + dplayer + Color.WHITE + rollbackDecoration, Color.DARK_AQUA + rollbackDecoration + dname + Color.WHITE, selector));
+                                    String blockTooltip = getProviderTooltip(data.metadata());
+                                    String targetDisplay = blockTooltip.isEmpty()
+                                            ? Color.DARK_AQUA + rollbackDecoration + dname + Color.WHITE
+                                            : ChatUtils.createTooltip(Color.DARK_AQUA + rollbackDecoration + dname, blockTooltip) + Color.WHITE;
+
+                                    Chat.sendComponent(player, timeago + " " + tag + " " + Phrase.build(phrase, Color.DARK_AQUA + rollbackDecoration + dplayer + Color.WHITE + rollbackDecoration, targetDisplay, selector));
                                     PluginChannelListener.getInstance().sendData(player, data.time(), phrase, selector, dplayer, dname, (tag.contains("+") ? 1 : -1), dataX, dataY, dataZ, worldId, rollbackDecoration, false, tag.contains("+"));
                                 }
 
@@ -454,6 +463,20 @@ public class StandardLookupThread implements Runnable {
             e.printStackTrace();
         } finally {
             ConfigHandler.lookupThrottle.put(player.getName(), new Object[] { false, System.currentTimeMillis() });
+        }
+    }
+
+    private static String getProviderTooltip(String metaJson) {
+        if (metaJson == null || metaJson.isEmpty()) {
+            return "";
+        }
+
+        try {
+            byte[] providerData = BlockUtils.deserializeMeta(metaJson).providerData();
+            return BlockDataProviderRegistry.getTooltip(providerData);
+        }
+        catch (Exception ignored) {
+            return "";
         }
     }
 }
