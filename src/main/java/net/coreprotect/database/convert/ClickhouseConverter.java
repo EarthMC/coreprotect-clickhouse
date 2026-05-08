@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -106,10 +108,46 @@ public class ClickhouseConverter {
 
     public String formatSourceColumn(String column, ConvertOptions options) {
         if (this.databaseAccess instanceof SQLiteDatabaseInformation && "rowid".equalsIgnoreCase(column)) {
-            return "rowNumberInAllBlocks() + " + (options.offset() + 1);
+            return "rowNumberInAllBlocks() + " + (options.sourceOffset() + 1);
         }
 
         return column;
+    }
+
+    public String formatSourceSelect(TableData table, ConvertOptions options, String columns) {
+        String query = "SELECT " + columns + " FROM " + formatMysqlSource(table);
+
+        if (options.singleChunk() && this.databaseAccess instanceof MySQLLoginInformation) {
+            long lowerInclusive = options.sourceOffset() + 1;
+            long upperExclusive = lowerInclusive + options.chunkSize();
+            return query + " WHERE rowid >= " + lowerInclusive + " AND rowid < " + upperExclusive;
+        }
+
+        if (options.chunked()) {
+            return query + " LIMIT " + options.chunkSize() + " OFFSET " + options.sourceOffset();
+        }
+
+        if (options.offset() > 0) {
+            return query + " OFFSET " + options.offset();
+        }
+
+        return query;
+    }
+
+    public String formatLocalSqliteSourceSelect(TableData table, ConvertOptions options, String columns) {
+        String query = "SELECT " + columns + " FROM " + quoteSqliteIdentifier(table.fullName());
+
+        if (options.singleChunk() && options.chunked()) {
+            long lowerInclusive = options.sourceOffset() + 1;
+            long upperExclusive = lowerInclusive + options.chunkSize();
+            return query + " WHERE rowid >= " + lowerInclusive + " AND rowid < " + upperExclusive;
+        }
+
+        if (options.offset() > 0) {
+            return query + " WHERE rowid > " + options.offset();
+        }
+
+        return query;
     }
 
     public String formatSourceRowCount(TableData table) {
@@ -118,6 +156,38 @@ public class ClickhouseConverter {
             case MySQLLoginInformation(String address, String database, String user, String password) -> "SELECT AUTO_INCREMENT FROM mysql(" + quoteClickHouseString(address) + ", 'information_schema', 'TABLES', " + quoteClickHouseString(user) + ", " + quoteClickHouseString(password) + ") WHERE TABLE_SCHEMA = " + quoteClickHouseString(database) + " AND TABLE_NAME = " + quoteClickHouseString(table.fullName());
             case null -> throw new IllegalStateException("No database source provided for the converter to use, use /co convert login ");
         };
+    }
+
+    public String formatSourceChunkLimit(TableData table) {
+        return switch (this.databaseAccess) {
+            case SQLiteDatabaseInformation ignored -> "SELECT count() FROM " + formatMysqlSource(table);
+            case MySQLLoginInformation ignored -> "SELECT max(rowid) FROM " + formatMysqlSource(table);
+            case null -> throw new IllegalStateException("No database source provided for the converter to use, use /co convert login ");
+        };
+    }
+
+    public Path localSqliteDatabasePath() {
+        if (this.databaseAccess instanceof SQLiteDatabaseInformation sqlite) {
+            Path databasePath = Path.of(sqlite.databasePath()).toAbsolutePath();
+            if (Files.isRegularFile(databasePath)) {
+                return databasePath;
+            }
+        }
+
+        return null;
+    }
+
+    public Connection openLocalSqliteConnection() throws SQLException {
+        Path databasePath = localSqliteDatabasePath();
+        if (databasePath == null) {
+            return null;
+        }
+
+        return DriverManager.getConnection("jdbc:sqlite:" + databasePath.toUri() + "?mode=ro");
+    }
+
+    public String quoteSqliteIdentifier(String identifier) {
+        return "\"" + identifier.replace("\"", "\"\"") + "\"";
     }
 
     private String quoteClickHouseString(String value) {

@@ -35,8 +35,8 @@ public class SimpleConvertProcess implements ConvertProcess {
             values.add(converter.formatSourceColumn(entry.getValue(), options));
         }
 
-        String query = "INSERT INTO " + ConfigHandler.prefix + table.getName() + " (" + String.join(", ", columns) + ")" +
-                "SELECT " + String.join(", ", values) + " FROM " + converter.formatMysqlSource(table) + " OFFSET " + options.offset() + ";";
+        String query = "INSERT INTO " + ConfigHandler.prefix + table.getName() + " (" + String.join(", ", columns) + ") " +
+                converter.formatSourceSelect(table, options, String.join(", ", values)) + ";";
 
         try (Statement statement = connection.createStatement()) {
             statement.execute(query);

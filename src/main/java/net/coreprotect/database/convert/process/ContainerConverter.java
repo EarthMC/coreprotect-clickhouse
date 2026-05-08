@@ -17,10 +17,19 @@ public class ContainerConverter implements ConvertProcess {
 
     @Override
     public void convertTable(ClickhouseConverter converter, ConvertOptions options, Connection connection) throws SQLException {
+        final long startTime = System.currentTimeMillis();
         long batchCount = 0;
+        final Connection localSqliteConnection = converter.openLocalSqliteConnection();
+        final Connection readConnection = localSqliteConnection != null ? localSqliteConnection : connection;
+        final String sourceQuery = localSqliteConnection != null ?
+                converter.formatLocalSqliteSourceSelect(table, options, "rowid, time, user, wid, x, y, z, type, data, amount, hex(metadata), action, rolled_back") :
+                converter.formatSourceSelect(table, options, converter.formatSourceColumn("rowid", options) + ", time, user, wid, x, y, z, type, data, amount, hex(metadata), action, rolled_back");
+
+        converter.logger().info("Converting {}{}...", table.fullName(), describeChunk(options));
 
         try (PreparedStatement insertStatement = connection.prepareStatement("INSERT INTO " + table.fullName() + " (rowid, time, user, wid, x, y, z, type, data, amount, metadata, action, rolled_back) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            PreparedStatement readStatement = connection.prepareStatement("SELECT " + converter.formatSourceColumn("rowid", options) + ", time, user, wid, x, y, z, type, data, amount, hex(metadata), action, rolled_back FROM " + converter.formatMysqlSource(table) + " OFFSET " + options.offset())) {
+            Connection ignored = localSqliteConnection;
+            PreparedStatement readStatement = readConnection.prepareStatement(sourceQuery)) {
 
             final ResultSet rs = readStatement.executeQuery();
             while (converter.next(rs, insertStatement, batchCount)) {
@@ -46,11 +55,27 @@ public class ContainerConverter implements ConvertProcess {
 
                 if (++batchCount % 50_000 == 0) {
                     insertStatement.executeBatch();
+                    logProgress(converter, batchCount, startTime, options);
                 }
             }
 
             insertStatement.executeBatch();
+            logProgress(converter, batchCount, startTime, options);
         }
+    }
+
+    private String describeChunk(ConvertOptions options) {
+        if (!options.singleChunk()) {
+            return options.offset() > 0 ? " from offset " + options.offset() : "";
+        }
+
+        return " chunk [" + options.sourceOffset() + ", " + (options.sourceOffset() + options.chunkSize()) + ")";
+    }
+
+    private void logProgress(ClickhouseConverter converter, long rows, long startTime, ConvertOptions options) {
+        long elapsedMillis = Math.max(1L, System.currentTimeMillis() - startTime);
+        long rowsPerSecond = rows * 1000L / elapsedMillis;
+        converter.logger().info("Converted {} rows from {}{} ({} rows/sec)", rows, table.fullName(), describeChunk(options), rowsPerSecond);
     }
 }
 

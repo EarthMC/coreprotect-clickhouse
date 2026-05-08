@@ -639,6 +639,10 @@ public class ItemUtils {
     }
 
     public static ItemMeta deserializeItemMeta(Class<? extends ItemMeta> itemMetaClass, Map<String, Object> args) {
+        if (isUnsupportedBlockStateContainerMeta(itemMetaClass, args)) {
+            return null;
+        }
+
         try {
             org.bukkit.configuration.serialization.DelegateDeserialization delegate = itemMetaClass.getAnnotation(org.bukkit.configuration.serialization.DelegateDeserialization.class);
             return (ItemMeta) org.bukkit.configuration.serialization.ConfigurationSerialization.deserializeObject(args, delegate.value());
@@ -650,6 +654,14 @@ public class ItemUtils {
         }
 
         return null;
+    }
+
+    private static boolean isUnsupportedBlockStateContainerMeta(Class<? extends ItemMeta> itemMetaClass, Map<String, Object> args) {
+        if (!itemMetaClass.getName().endsWith("CraftMetaBlockState")) {
+            return false;
+        }
+
+        return args.toString().contains("minecraft:container");
     }
 
     public static String getEnchantments(String itemData, int type, int amount) {
