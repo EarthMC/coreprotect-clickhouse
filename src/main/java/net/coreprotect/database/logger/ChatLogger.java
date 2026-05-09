@@ -27,7 +27,7 @@ public class ChatLogger {
             int x = location.getBlockX();
             int y = location.getBlockY();
             int z = location.getBlockZ();
-            int wid = WorldUtils.getWorldId(location.getWorld().getName());
+            int wid = WorldUtils.getWorldId(location);
             int userId = ConfigHandler.playerIdCache.get(user.toLowerCase(Locale.ROOT));
             ChatStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, message, cancelled);
         }

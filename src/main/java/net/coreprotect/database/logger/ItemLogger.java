@@ -136,7 +136,7 @@ public class ItemLogger {
 
                     int userId = UserStatement.getId(preparedStmt, event.getUser(), true);
                     Location eventLocation = event.getLocation();
-                    int wid = WorldUtils.getWorldId(eventLocation.getWorld().getName());
+                    int wid = WorldUtils.getWorldId(eventLocation);
                     int time = (int) (System.currentTimeMillis() / 1000L) - offset;
                     int x = eventLocation.getBlockX();
                     int y = eventLocation.getBlockY();

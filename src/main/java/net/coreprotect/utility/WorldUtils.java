@@ -1,10 +1,12 @@
 package net.coreprotect.utility;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
 
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.consumer.Queue;
+import net.coreprotect.consumer.data.QueuedLocation;
 
 public class WorldUtils extends Queue {
 
@@ -30,6 +32,14 @@ public class WorldUtils extends Queue {
         }
 
         return id;
+    }
+
+    public static int getWorldId(Location location) {
+        if (location instanceof QueuedLocation queuedLocation && queuedLocation.worldId() != -1) {
+            return queuedLocation.worldId();
+        }
+
+        return getWorldId(location.getWorld().getName());
     }
 
     public static String getWorldName(int id) {

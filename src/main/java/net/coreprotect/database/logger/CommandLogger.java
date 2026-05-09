@@ -35,7 +35,7 @@ public class CommandLogger {
 
             int userId = UserStatement.getId(preparedStmt, event.getUser(), true);
             Location eventLocation = event.getLocation();
-            int wid = WorldUtils.getWorldId(eventLocation.getWorld().getName());
+            int wid = WorldUtils.getWorldId(eventLocation);
             int x = eventLocation.getBlockX();
             int y = eventLocation.getBlockY();
             int z = eventLocation.getBlockZ();
