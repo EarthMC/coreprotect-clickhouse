@@ -2,6 +2,7 @@ package net.coreprotect.listener.block;
 
 import java.util.Locale;
 
+import com.destroystokyo.paper.MaterialTags;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -241,7 +242,7 @@ public final class BlockBreakListener extends Queue implements Listener {
             Material blockType = blockLog.getType();
             BlockState blockState = blockLog.getState();
 
-            if (log && (blockType.name().toUpperCase(Locale.ROOT).endsWith("_BANNER") || blockType.equals(Material.SKELETON_SKULL) || blockType.equals(Material.SKELETON_WALL_SKULL) || blockType.equals(Material.WITHER_SKELETON_SKULL) || blockType.equals(Material.WITHER_SKELETON_WALL_SKULL) || blockType.equals(Material.ZOMBIE_HEAD) || blockType.equals(Material.ZOMBIE_WALL_HEAD) || blockType.equals(Material.PLAYER_HEAD) || blockType.equals(Material.PLAYER_WALL_HEAD) || blockType.equals(Material.CREEPER_HEAD) || blockType.equals(Material.CREEPER_WALL_HEAD) || blockType.equals(Material.DRAGON_HEAD) || blockType.equals(Material.DRAGON_WALL_HEAD))) {
+            if (log && (blockType.name().toUpperCase(Locale.ROOT).endsWith("_BANNER") || MaterialTags.SKULLS.isTagged(blockType))) {
                 try {
                     if (blockState instanceof Banner || blockState instanceof Skull) {
                         Queue.queueAdvancedBreak(user, blockState, blockType, blockState.getBlockData().getAsString(), 0, type, blockNumber);

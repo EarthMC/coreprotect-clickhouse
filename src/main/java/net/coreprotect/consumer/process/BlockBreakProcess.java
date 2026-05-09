@@ -17,13 +17,12 @@ class BlockBreakProcess {
 
     static void process(PreparedStatement preparedStmt, PreparedStatement preparedStmtSkulls, int batchCount, int processId, int id, Material blockType, int blockDataId, Material replaceType, int forceData, String user, Object object, String blockData) {
         if (object instanceof QueuedBlockState queuedBlock) {
-            BlockState block = queuedBlock.blockState();
-            if (block instanceof Skull) {
-                SkullBreakLogger.log(preparedStmt, preparedStmtSkulls, batchCount, user, block);
-            }
-            else {
+            //if (block instanceof Skull) { // log as block break
+            //    SkullBreakLogger.log(preparedStmt, preparedStmtSkulls, batchCount, user, block);
+            //}
+            //else {
                 BlockBreakLogger.log(preparedStmt, batchCount, user, queuedBlock.location(), MaterialUtils.getBlockId(blockType), blockDataId, queuedBlock.meta(), queuedBlock.blockData(), blockData);
-            }
+            //}
         }
         else if (object instanceof BlockState) {
             BlockState block = (BlockState) object;
