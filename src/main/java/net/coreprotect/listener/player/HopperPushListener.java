@@ -2,6 +2,7 @@ package net.coreprotect.listener.player;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -137,9 +138,12 @@ public final class HopperPushListener {
             ConfigHandler.hopperSuccess.put(loggingChestId, new Object[] { destinationContainer, movedItem });
         }
 
-        List<Object> list = ConfigHandler.transactingChest.get(location.getWorld().getUID().toString() + "." + location.getBlockX() + "." + location.getBlockY() + "." + location.getBlockZ());
+        LinkedList<Object> list = ConfigHandler.transactingChest.get(location.getWorld().getUID().toString() + "." + location.getBlockX() + "." + location.getBlockY() + "." + location.getBlockZ());
         if (list != null) {
             list.add(movedItem);
+            if (list.size() > ConfigHandler.TRANSACTING_CHEST_SIZE_LIMIT) {
+                list.removeFirst();
+            }
         }
 
         final Config config = Config.getConfig(location.getWorld());

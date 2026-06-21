@@ -2,6 +2,7 @@ package net.coreprotect.listener.player;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
@@ -139,7 +140,7 @@ public final class PlayerInteractEntityListener extends Queue implements Listene
             ConfigHandler.oldContainer.put(loggingChestId, list);
         }
 
-        ConfigHandler.transactingChest.computeIfAbsent(transactingChestId, k -> Collections.synchronizedList(new ArrayList<>()));
+        ConfigHandler.transactingChest.computeIfAbsent(transactingChestId, k -> new LinkedList<>());
         Queue.queueContainerTransaction(user, location, type, container, chestId);
 
         if (logDrop) {

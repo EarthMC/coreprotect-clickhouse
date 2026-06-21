@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -119,7 +120,8 @@ public class ConfigHandler extends Queue {
     public static Map<String, HashSet<String>> FilteredBlacklist = syncMap();
     public static Map<String, Integer> loggingChest = syncMap();
     public static Map<String, Integer> loggingItem = syncMap();
-    public static ConcurrentHashMap<String, List<Object>> transactingChest = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<String, LinkedList<Object>> transactingChest = new ConcurrentHashMap<>(); // CH: swapped to a linked list to be able to enforce a size limit
+    public static final int TRANSACTING_CHEST_SIZE_LIMIT = Integer.getInteger("net.earthmc.coreprotect-clickhouse.transacting-chest-size-limit", 128);
     public static ConcurrentHashMap<String, List<ItemStack[]>> oldContainer = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, List<ItemStack>> itemsPickup = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, List<ItemStack>> itemsDrop = new ConcurrentHashMap<>();
