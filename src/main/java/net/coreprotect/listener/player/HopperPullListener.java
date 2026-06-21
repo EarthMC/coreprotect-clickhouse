@@ -2,6 +2,7 @@ package net.coreprotect.listener.player;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -136,9 +137,12 @@ public final class HopperPullListener {
 
         boolean hopperTransactions = Config.getConfig(location.getWorld()).HOPPER_TRANSACTIONS;
         if (!hopperTransactions) {
-            List<Object> list = ConfigHandler.transactingChest.get(location.getWorld().getUID().toString() + "." + location.getBlockX() + "." + location.getBlockY() + "." + location.getBlockZ());
+            LinkedList<Object> list = ConfigHandler.transactingChest.get(location.getWorld().getUID().toString() + "." + location.getBlockX() + "." + location.getBlockY() + "." + location.getBlockZ());
             if (list != null) {
                 list.add(movedItem);
+                if (list.size() > ConfigHandler.TRANSACTING_CHEST_SIZE_LIMIT) {
+                    list.removeFirst();
+                }
             }
             return;
         }
@@ -148,9 +152,12 @@ public final class HopperPullListener {
             return;
         }
 
-        List<Object> list = ConfigHandler.transactingChest.get(destinationLocation.getWorld().getUID().toString() + "." + destinationLocation.getBlockX() + "." + destinationLocation.getBlockY() + "." + destinationLocation.getBlockZ());
+        LinkedList<Object> list = ConfigHandler.transactingChest.get(destinationLocation.getWorld().getUID().toString() + "." + destinationLocation.getBlockX() + "." + destinationLocation.getBlockY() + "." + destinationLocation.getBlockZ());
         if (list != null) {
             list.add(new ItemStack[] { null, movedItem });
+            if (list.size() > ConfigHandler.TRANSACTING_CHEST_SIZE_LIMIT) {
+                list.removeFirst();
+            }
         }
 
         final Config config = Config.getConfig(location.getWorld());

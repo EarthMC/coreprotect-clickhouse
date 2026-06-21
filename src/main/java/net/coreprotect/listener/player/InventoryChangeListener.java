@@ -2,6 +2,7 @@ package net.coreprotect.listener.player;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
@@ -244,7 +245,7 @@ public final class InventoryChangeListener extends Queue implements Listener {
             ConfigHandler.forceContainer.computeIfAbsent(loggingChestId, k -> new ArrayList<>()).add(ItemUtils.getContainerState(forceInventoryData));
         }
 
-        ConfigHandler.transactingChest.computeIfAbsent(transactingChestId, k -> Collections.synchronizedList(new ArrayList<>()));
+        ConfigHandler.transactingChest.computeIfAbsent(transactingChestId, k -> new LinkedList<>());
         Queue.queueContainerTransaction(user, playerLocation, type, inventory, chestId);
         return true;
     }
