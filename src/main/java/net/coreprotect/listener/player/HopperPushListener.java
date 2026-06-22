@@ -140,9 +140,11 @@ public final class HopperPushListener {
 
         LinkedList<Object> list = ConfigHandler.transactingChest.get(location.getWorld().getUID().toString() + "." + location.getBlockX() + "." + location.getBlockY() + "." + location.getBlockZ());
         if (list != null) {
-            list.add(movedItem);
-            if (list.size() > ConfigHandler.TRANSACTING_CHEST_SIZE_LIMIT) {
-                list.removeFirst();
+            synchronized (list) {
+                list.add(movedItem);
+                if (list.size() > ConfigHandler.TRANSACTING_CHEST_SIZE_LIMIT) {
+                    list.removeFirst();
+                }
             }
         }
 
