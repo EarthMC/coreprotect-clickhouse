@@ -139,9 +139,11 @@ public final class HopperPullListener {
         if (!hopperTransactions) {
             LinkedList<Object> list = ConfigHandler.transactingChest.get(location.getWorld().getUID().toString() + "." + location.getBlockX() + "." + location.getBlockY() + "." + location.getBlockZ());
             if (list != null) {
-                list.add(movedItem);
-                if (list.size() > ConfigHandler.TRANSACTING_CHEST_SIZE_LIMIT) {
-                    list.removeFirst();
+                synchronized (list) {
+                    list.add(movedItem);
+                    if (list.size() > ConfigHandler.TRANSACTING_CHEST_SIZE_LIMIT) {
+                        list.removeFirst();
+                    }
                 }
             }
             return;
@@ -154,9 +156,11 @@ public final class HopperPullListener {
 
         LinkedList<Object> list = ConfigHandler.transactingChest.get(destinationLocation.getWorld().getUID().toString() + "." + destinationLocation.getBlockX() + "." + destinationLocation.getBlockY() + "." + destinationLocation.getBlockZ());
         if (list != null) {
-            list.add(new ItemStack[] { null, movedItem });
-            if (list.size() > ConfigHandler.TRANSACTING_CHEST_SIZE_LIMIT) {
-                list.removeFirst();
+            synchronized (list) {
+                list.add(new ItemStack[]{null, movedItem});
+                if (list.size() > ConfigHandler.TRANSACTING_CHEST_SIZE_LIMIT) {
+                    list.removeFirst();
+                }
             }
         }
 
