@@ -1,7 +1,5 @@
 package net.coreprotect.paper.listener;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,11 +23,12 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
+import io.papermc.paper.event.entity.ItemTransportingEntityValidateTargetEvent;
+
 import net.coreprotect.CoreProtect;
 import net.coreprotect.bukkit.BukkitAdapter;
 import net.coreprotect.config.Config;
-import net.coreprotect.config.ConfigHandler;
-import net.coreprotect.listener.player.InventoryChangeListener;
+import net.coreprotect.consumer.Queue;
 import net.coreprotect.thread.Scheduler;
 import net.coreprotect.utility.ItemUtils;
 
@@ -42,12 +41,15 @@ public final class CopperGolemChestListener implements Listener {
     private static final long CLOSE_FINALIZE_DELAY_TICKS = 1L;
     private static final int CLOSE_FINALIZE_MAX_ATTEMPTS = 3;
     private static final int CLOSE_FALLBACK_MAX_ATTEMPTS = 2;
+    private static final int TARGET_POLL_DELAY_TICKS = 5;
+    private static final int TARGET_POLL_MAX_ATTEMPTS = 80;
 
     private final CoreProtect plugin;
     private final Map<UUID, OpenInteraction> openInteractions = new ConcurrentHashMap<>();
     private final Map<UUID, RecentEmptyCopperChestSkip> recentEmptyCopperChestSkips = new ConcurrentHashMap<>();
     private final Map<TransactionKey, OpenInteractionIndex> openInteractionIndexByContainerKey = new ConcurrentHashMap<>();
     private final Map<TransactionKey, Set<UUID>> emptySkipGolemsByContainerKey = new ConcurrentHashMap<>();
+    private final Map<TargetObservationKey, TargetObservation> targetObservations = new ConcurrentHashMap<>();
     private volatile long lastCleanupMillis;
 
     public CopperGolemChestListener(CoreProtect plugin) {
@@ -55,6 +57,89 @@ public final class CopperGolemChestListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onValidateTarget(ItemTransportingEntityValidateTargetEvent event) {
+        if (!(event.getEntity() instanceof CopperGolem golem) || !event.isAllowed()) {
+            return;
+        }
+
+        BlockState blockState = event.getBlock().getState();
+        if (!(blockState instanceof InventoryHolder holder)) {
+            return;
+        }
+
+        Location location = blockState.getLocation();
+        Material type = blockState.getType();
+        if (location.getWorld() == null || (!isCopperChest(type) && type != Material.CHEST && type != Material.TRAPPED_CHEST)) {
+            return;
+        }
+        if (!Config.getConfig(location.getWorld()).ITEM_TRANSACTIONS) {
+            return;
+        }
+
+        Inventory inventory = holder.getInventory();
+        Location canonicalLocation = getCanonicalContainerLocation(location, inventory);
+        TargetObservationKey key = new TargetObservationKey(golem.getUniqueId(), TransactionKey.of(canonicalLocation));
+        targetObservations.computeIfAbsent(key, ignored -> {
+            HeldItemSnapshot held = getHeldItemSnapshot(golem);
+            TargetObservation observation = new TargetObservation(canonicalLocation.clone(), type, ItemUtils.getContainerState(inventory.getContents()), held.material, held.amount);
+            scheduleTargetPoll(key, observation, 1);
+            return observation;
+        });
+    }
+
+    private void scheduleTargetPoll(TargetObservationKey key, TargetObservation observation, int attempt) {
+        Scheduler.scheduleSyncDelayedTask(plugin, () -> pollTarget(key, observation, attempt), observation.location, TARGET_POLL_DELAY_TICKS);
+    }
+
+    private void pollTarget(TargetObservationKey key, TargetObservation observation, int attempt) {
+        if (targetObservations.get(key) != observation) {
+            return;
+        }
+
+        BlockState state = observation.location.getBlock().getState();
+        if (!(state instanceof InventoryHolder holder)) {
+            targetObservations.remove(key, observation);
+            return;
+        }
+
+        ItemStack[] current = ItemUtils.getContainerState(holder.getInventory().getContents());
+        if (current != null && hasInventoryChanged(observation.baseline, current)) {
+            Entity entity = plugin.getServer().getEntity(key.golemId);
+            if (entity instanceof CopperGolem golem && isObservedChangeByGolem(golem, observation, current) && targetObservations.remove(key, observation)) {
+                Queue.queueDirectContainerTransaction(USERNAME, observation.location, observation.containerType, observation.baseline, current);
+                return;
+            }
+
+            // A player or another transport changed this candidate container.
+            // Continue observing from its new state instead of attributing it to the golem.
+            observation.baseline = current;
+        }
+
+        if (attempt >= TARGET_POLL_MAX_ATTEMPTS || plugin.getServer().getEntity(key.golemId) == null) {
+            targetObservations.remove(key, observation);
+            return;
+        }
+        scheduleTargetPoll(key, observation, attempt + 1);
+    }
+
+    private boolean isObservedChangeByGolem(CopperGolem golem, TargetObservation observation, ItemStack[] current) {
+        HeldItemSnapshot heldNow = getHeldItemSnapshot(golem);
+        if (observation.heldMaterial == null || observation.heldAmount <= 0) {
+            if (heldNow.material == null || heldNow.amount <= 0) {
+                return false;
+            }
+            int removed = sumMaterialAmount(observation.baseline, heldNow.material) - sumMaterialAmount(current, heldNow.material);
+            int totalRemoved = sumAllItems(observation.baseline) - sumAllItems(current);
+            return removed == heldNow.amount && totalRemoved == heldNow.amount;
+        }
+
+        int heldAfter = heldNow.material == observation.heldMaterial ? heldNow.amount : 0;
+        int moved = observation.heldAmount - heldAfter;
+        int added = sumMaterialAmount(current, observation.heldMaterial) - sumMaterialAmount(observation.baseline, observation.heldMaterial);
+        int totalAdded = sumAllItems(current) - sumAllItems(observation.baseline);
+        return moved > 0 && added == moved && totalAdded == moved;
+    }
+
     public void onGenericGameEvent(GenericGameEvent event) {
         if (event == null) {
             return;
@@ -364,8 +449,7 @@ public final class CopperGolemChestListener implements Listener {
             return;
         }
 
-        recordForcedContainerState(interaction.location, currentContents);
-        InventoryChangeListener.inventoryTransaction(USERNAME, interaction.location, interaction.baselineState);
+        Queue.queueDirectContainerTransaction(USERNAME, interaction.location, interaction.containerType, interaction.baselineState, currentContents);
     }
 
     private void finalizeUntrackedCopperChestClose(UUID golemId, Location containerLocation, Material containerType, int attempt) {
@@ -412,8 +496,7 @@ public final class CopperGolemChestListener implements Listener {
             return;
         }
 
-        recordForcedContainerState(containerLocation, currentContents);
-        InventoryChangeListener.inventoryTransaction(USERNAME, containerLocation, baselineCandidate);
+        Queue.queueDirectContainerTransaction(USERNAME, containerLocation, containerType, baselineCandidate, currentContents);
     }
 
     private boolean isAttributableToGolem(CopperGolem golem, OpenInteraction interaction, ItemStack[] currentContents) {
@@ -510,37 +593,6 @@ public final class CopperGolemChestListener implements Listener {
         }
 
         return null;
-    }
-
-    private void recordForcedContainerState(Location location, ItemStack[] contents) {
-        if (location == null) {
-            return;
-        }
-
-        ItemStack[] snapshot = ItemUtils.getContainerState(contents);
-        if (snapshot == null) {
-            return;
-        }
-
-        String loggingContainerId = USERNAME + "." + location.getBlockX() + "." + location.getBlockY() + "." + location.getBlockZ();
-
-        List<ItemStack[]> forceList = ConfigHandler.forceContainer.get(loggingContainerId);
-        List<ItemStack[]> oldList = ConfigHandler.oldContainer.get(loggingContainerId);
-
-        boolean hasPendingBaseline = oldList != null && !oldList.isEmpty();
-        boolean hasStaleForceSnapshots = forceList != null && !forceList.isEmpty() && (forceList.get(0) == null || forceList.get(0).length != snapshot.length);
-
-        if (!hasPendingBaseline || hasStaleForceSnapshots) {
-            ConfigHandler.forceContainer.remove(loggingContainerId);
-            forceList = null;
-        }
-
-        if (forceList == null) {
-            forceList = Collections.synchronizedList(new ArrayList<>());
-            ConfigHandler.forceContainer.put(loggingContainerId, forceList);
-        }
-
-        forceList.add(snapshot);
     }
 
     private void cleanupOpenInteractions(long nowMillis) {
@@ -689,6 +741,50 @@ public final class CopperGolemChestListener implements Listener {
             return HeldItemSnapshot.EMPTY;
         }
         return new HeldItemSnapshot(mainHand.getType(), mainHand.getAmount());
+    }
+
+    private static final class TargetObservationKey {
+
+        private final UUID golemId;
+        private final TransactionKey containerKey;
+
+        private TargetObservationKey(UUID golemId, TransactionKey containerKey) {
+            this.golemId = golemId;
+            this.containerKey = containerKey;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof TargetObservationKey other)) {
+                return false;
+            }
+            return golemId.equals(other.golemId) && containerKey.equals(other.containerKey);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(golemId, containerKey);
+        }
+    }
+
+    private static final class TargetObservation {
+
+        private final Location location;
+        private final Material containerType;
+        private ItemStack[] baseline;
+        private final Material heldMaterial;
+        private final int heldAmount;
+
+        private TargetObservation(Location location, Material containerType, ItemStack[] baseline, Material heldMaterial, int heldAmount) {
+            this.location = location;
+            this.containerType = containerType;
+            this.baseline = baseline;
+            this.heldMaterial = heldMaterial;
+            this.heldAmount = heldAmount;
+        }
     }
 
     private static final class OpenInteraction {
