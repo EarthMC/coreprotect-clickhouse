@@ -230,6 +230,35 @@ public class ContainerLogger extends Queue {
         }
     }
 
+    /**
+     * Logs an already captured container transition. This avoids reading a live
+     * Bukkit inventory later on the database consumer thread.
+     */
+    public static void logSnapshot(PreparedStatement preparedStatement, int batchCount, String user, Material type, Location location, ItemStack[] before, ItemStack[] after) {
+        ItemStack[] removed = ItemUtils.getContainerState(before);
+        ItemStack[] added = ItemUtils.getContainerState(after);
+        if (removed == null || added == null) {
+            return;
+        }
+
+        for (ItemStack oldItem : removed) {
+            for (ItemStack newItem : added) {
+                if (oldItem == null || newItem == null || !oldItem.isSimilar(newItem) || BlockUtils.isAir(oldItem.getType())) {
+                    continue;
+                }
+
+                int matched = Math.min(oldItem.getAmount(), newItem.getAmount());
+                oldItem.setAmount(oldItem.getAmount() - matched);
+                newItem.setAmount(newItem.getAmount() - matched);
+            }
+        }
+
+        ItemUtils.mergeItems(type, removed);
+        ItemUtils.mergeItems(type, added);
+        logTransaction(preparedStatement, batchCount, user, type, null, removed, ItemTransactionActions.REMOVE, location);
+        logTransaction(preparedStatement, batchCount, user, type, null, added, ItemTransactionActions.ADD, location);
+    }
+
     protected static void logTransaction(PreparedStatement preparedStmt, int batchCount, String user, Material containerType, String faceData, ItemStack[] items, int action, Location location) {
         try {
             if (ConfigHandler.isBlacklisted(user)) {
