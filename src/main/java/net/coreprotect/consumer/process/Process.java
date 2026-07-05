@@ -48,6 +48,7 @@ public class Process {
     public static final int INVENTORY_ROLLBACK_UPDATE = 27;
     public static final int INVENTORY_CONTAINER_ROLLBACK_UPDATE = 28;
     public static final int BLOCK_INVENTORY_ROLLBACK_UPDATE = 29;
+    public static final int DIRECT_CONTAINER_TRANSACTION = 30;
 
     public static int lastLockUpdate = 0;
     private static volatile int currentConsumerSize = 0;
@@ -173,6 +174,9 @@ public class Process {
                                     break;
                                 case Process.CONTAINER_TRANSACTION:
                                     ContainerTransactionProcess.process(preparedStmtContainers, preparedStmtItems, i, processId, id, blockType, forceData, user, object);
+                                    break;
+                                case Process.DIRECT_CONTAINER_TRANSACTION:
+                                    DirectContainerTransactionProcess.process(preparedStmtContainers, i, user, blockType, object);
                                     break;
                                 case Process.ITEM_TRANSACTION:
                                     ItemTransactionProcess.process(preparedStmtItems, i, processId, id, forceData, replaceData, blockData, user, object);
