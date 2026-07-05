@@ -31,6 +31,7 @@ import net.coreprotect.thread.Scheduler;
 import net.coreprotect.thread.CacheHandler;
 import net.coreprotect.utility.BlockUtils;
 import net.coreprotect.utility.EntityUtils;
+import net.coreprotect.utility.ItemUtils;
 import net.coreprotect.utility.WorldUtils;
 import net.coreprotect.utility.ErrorReporter;
 
@@ -267,6 +268,14 @@ public class Queue {
         addConsumer(currentConsumer, new Object[] { consumerId, Process.CONTAINER_TRANSACTION, type, 0, null, 0, chestId, null });
         Consumer.consumerInventories.get(currentConsumer).put(consumerId, inventory);
         queueStandardData(consumerId, currentConsumer, new String[] { user, null }, location);
+    }
+
+    public static synchronized void queueDirectContainerTransaction(String user, Location location, Material type, ItemStack[] oldInventory, ItemStack[] newInventory) {
+        int currentConsumer = Consumer.currentConsumer;
+        int consumerId = Consumer.newConsumerId(currentConsumer);
+        addConsumer(currentConsumer, new Object[] { consumerId, Process.DIRECT_CONTAINER_TRANSACTION, type, 0, null, 0, 0, null });
+        Object[] snapshots = new Object[] { location.clone(), ItemUtils.getContainerState(oldInventory), ItemUtils.getContainerState(newInventory) };
+        queueStandardData(consumerId, currentConsumer, new String[] { user, null }, snapshots);
     }
 
     protected static void queueItemTransaction(String user, Location location, int time, int offset, int itemId) {
