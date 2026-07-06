@@ -7,6 +7,7 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
 import net.coreprotect.thread.CacheHandler;
+import net.coreprotect.model.BlockGroup;
 import net.coreprotect.utility.WorldUtils;
 
 public final class PlayerInteractUtils {
@@ -24,6 +25,17 @@ public final class PlayerInteractUtils {
         int z = location.getBlockZ();
         String coordinates = x + "." + y + "." + z + "." + wid + "." + Material.DRAGON_EGG.name();
         CacheHandler.interactCache.put(coordinates, new Object[] { time, Material.DRAGON_EGG, player.getName() });
+    }
+
+    public static Block getInteractionBlock(Block clickedBlock) {
+        Material type = clickedBlock.getType();
+        if (BlockGroup.DOORS.contains(type)) {
+            Block blockBelow = clickedBlock.getRelative(0, -1, 0);
+            if (blockBelow.getType() == type) {
+                return blockBelow;
+            }
+        }
+        return clickedBlock;
     }
 
     public static void handleBisectedBlockVisualization(Player player, Block block, World world) {
