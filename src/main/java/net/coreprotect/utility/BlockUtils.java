@@ -26,6 +26,7 @@ import org.bukkit.inventory.ItemStack;
 import net.coreprotect.CoreProtect;
 import net.coreprotect.bukkit.BukkitAdapter;
 import net.coreprotect.thread.Scheduler;
+import org.jspecify.annotations.Nullable;
 
 public class BlockUtils {
 
@@ -295,7 +296,11 @@ public class BlockUtils {
         return null;
     }
 
-    public static SerializedBlockMeta deserializeMeta(String metaJson) {
+    public static @Nullable SerializedBlockMeta deserializeMeta(@Nullable String metaJson) {
+        if (metaJson == null || metaJson.isEmpty()) {
+            return null;
+        }
+
         return JsonSerialization.GSON.fromJson(metaJson, SerializedBlockMeta.class);
     }
 

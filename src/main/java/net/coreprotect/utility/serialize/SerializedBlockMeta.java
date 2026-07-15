@@ -27,6 +27,10 @@ public record SerializedBlockMeta(
         public SerializedBlockMeta deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             final JsonObject object = json.getAsJsonObject();
 
+            if (object.isEmpty()) {
+                return new SerializedBlockMeta(null, null, null);
+            }
+
             String command = null;
             Collection<SerializedItem> items = null;
             BannerData bannerData = null;
