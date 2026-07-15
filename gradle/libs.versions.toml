@@ -1,6 +1,6 @@
 [versions]
-minecraft = "26.2"
-paper = "26.2"
+minecraft = "1.21.11"
+paper = "1.21.11"
 hikaricp = "7.0.2"
 
 [libraries]
