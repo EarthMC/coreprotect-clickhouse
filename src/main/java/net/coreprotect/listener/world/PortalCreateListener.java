@@ -47,15 +47,17 @@ public final class PortalCreateListener extends Queue implements Listener {
 
             final Entity causingEntity = switch (event.getEntity()) {
                 case Player p -> p;
-                case Projectile projectile when projectile.getShooter() instanceof Entity entity ->
+                case Projectile projectile when projectile.getServer().isOwnedByCurrentRegion(projectile) && projectile.getShooter() instanceof Entity entity ->
                         entity;
                 case Item item -> {
-                    final UUID thrower = item.getThrower();
-                    if (thrower != null) {
-                        if (Bukkit.getServer().getPlayer(thrower) instanceof Player player) {
-                            yield player;
-                        } else if (event.getWorld().getEntity(thrower) instanceof Entity entity) {
-                            yield entity;
+                    if (item.getServer().isOwnedByCurrentRegion(item)) {
+                        final UUID thrower = item.getThrower();
+                        if (thrower != null) {
+                            if (Bukkit.getServer().getPlayer(thrower) instanceof Player player) {
+                                yield player;
+                            } else if (event.getWorld().getEntity(thrower) instanceof Entity entity) {
+                                yield entity;
+                            }
                         }
                     }
                     yield event.getEntity();
