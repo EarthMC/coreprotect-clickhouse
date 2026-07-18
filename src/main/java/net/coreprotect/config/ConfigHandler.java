@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -40,6 +41,7 @@ import net.coreprotect.database.Database;
 import net.coreprotect.database.statement.UserStatement;
 import net.coreprotect.language.Phrase;
 import net.coreprotect.listener.ListenerHandler;
+import net.coreprotect.model.BlockGroup;
 import net.coreprotect.paper.PaperAdapter;
 import net.coreprotect.patch.Patch;
 import net.coreprotect.utility.Chat;
@@ -47,7 +49,6 @@ import net.coreprotect.utility.Color;
 import net.coreprotect.utility.SystemUtils;
 import net.coreprotect.utility.VersionUtils;
 import net.coreprotect.utility.ErrorReporter;
-import oshi.hardware.CentralProcessor;
 
 public class ConfigHandler extends Queue {
 
@@ -81,7 +82,7 @@ public class ConfigHandler extends Queue {
     public static final String BLACKLIST_FILENAME = "blacklist.txt";
 
     public static HikariDataSource hikariDataSource = null;
-    public static final CentralProcessor processorInfo = SystemUtils.getProcessorInfo();
+    public static final SystemUtils.ProcessorInfo processorInfo = SystemUtils.getProcessorInfo();
     public static final boolean isSpigot = true;
     public static final boolean isPaper = true;
     public static final boolean isFolia = VersionUtils.isFolia();
@@ -121,6 +122,7 @@ public class ConfigHandler extends Queue {
     public static Map<String, Integer> loggingItem = syncMap();
     public static ConcurrentHashMap<String, List<Object>> transactingChest = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, List<ItemStack[]>> oldContainer = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<String, Set<String>> oldContainerViewers = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, List<ItemStack>> itemsPickup = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, List<ItemStack>> itemsDrop = new ConcurrentHashMap<>();
     public static ConcurrentHashMap<String, List<ItemStack>> itemsThrown = new ConcurrentHashMap<>();
@@ -167,6 +169,23 @@ public class ConfigHandler extends Queue {
                 UserStatement.loadId(connection, player.getName(), player.getUniqueId().toString());
             }
         }
+    }
+
+    public static void addOldContainerViewer(String locationSuffix, String loggingId) {
+        oldContainerViewers.compute(locationSuffix, (key, viewers) -> {
+            if (viewers == null) {
+                viewers = ConcurrentHashMap.newKeySet();
+            }
+            viewers.add(loggingId);
+            return viewers;
+        });
+    }
+
+    public static void removeOldContainerViewer(String locationSuffix, String loggingId) {
+        oldContainerViewers.computeIfPresent(locationSuffix, (key, viewers) -> {
+            viewers.remove(loggingId);
+            return viewers.isEmpty() ? null : viewers;
+        });
     }
 
     public static boolean isBlacklisted(String user) {
@@ -489,6 +508,7 @@ public class ConfigHandler extends Queue {
         try {
             BukkitAdapter.loadAdapter();
             PaperAdapter.loadAdapter();
+            BlockGroup.initialize();
             MaterialParser.loadConfiguredTags(CoreProtect.getInstance());
 
             ConfigHandler.loadConfig(); // Load (or create) the configuration file.
