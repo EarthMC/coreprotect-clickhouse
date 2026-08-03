@@ -43,7 +43,10 @@ public class CommandHandler implements CommandExecutor {
                     if (user.hasPermission("coreprotect.rollback") && (corecommand.equals("rollback") || corecommand.equals("rb") || corecommand.equals("ro") || corecommand.equals("apply") || corecommand.equals("cancel"))) {
                         permission = true;
                     }
-                    else if (user.hasPermission("coreprotect.restore") && (corecommand.equals("restore") || corecommand.equals("rs") || corecommand.equals("re") || corecommand.equals("undo") || corecommand.equals("apply") || corecommand.equals("cancel"))) {
+                    else if (user.hasPermission("coreprotect.restore") && (corecommand.equals("restore") || corecommand.equals("rs") || corecommand.equals("re") || corecommand.equals("apply") || corecommand.equals("cancel"))) {
+                        permission = true;
+                    }
+                    else if (user.hasPermission("coreprotect.undo") && corecommand.equals("undo")) {
                         permission = true;
                     }
                     else if (user.hasPermission("coreprotect.inspect") && (corecommand.equals("i") || corecommand.equals("inspect") || corecommand.equals("inspector"))) {

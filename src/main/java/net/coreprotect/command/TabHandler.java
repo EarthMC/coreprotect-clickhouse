@@ -90,7 +90,7 @@ public class TabHandler implements TabCompleter {
         addCompletionIfPermitted(sender, "coreprotect.reload", "reload", completions);
         addCompletionIfPermitted(sender, "coreprotect.status", "status", completions);
         addCompletionIfPermitted(sender, "coreprotect.lookup.near", "near", completions);
-        addCompletionIfPermitted(sender, "coreprotect.restore", "undo", completions);
+        addCompletionIfPermitted(sender, "coreprotect.undo", "undo", completions);
 
         return StringUtil.copyPartialMatches(arg, completions, new ArrayList<>(completions.size()));
     }

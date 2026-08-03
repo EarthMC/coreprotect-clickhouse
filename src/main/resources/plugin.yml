@@ -25,6 +25,7 @@ permissions:
         children:
             coreprotect.rollback: true
             coreprotect.restore: true
+            coreprotect.undo: true
             coreprotect.inspect: true
             coreprotect.help: true
             coreprotect.purge: true
@@ -119,6 +120,9 @@ permissions:
     coreprotect.restore:
         description: Has permission to perform restores
         default: op
+    coreprotect.undo:
+      description: Has permission to undo last action
+      default: op
     coreprotect.inspect:
         description: Has permission to use the inspector
         default: op
